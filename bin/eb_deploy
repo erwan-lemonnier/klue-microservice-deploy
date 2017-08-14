@@ -1,0 +1,436 @@
+#!/bin/bash
+
+set -e
+
+ARGS=$@
+
+EB_PROFILE=backend-publish
+EB_TIMEOUT=15
+EB_INSTANCE_TYPE=t2.micro
+EB_PLATFORM=docker-1.9.1
+EB_S3_BUCKET=elasticbeanstalk-eu-west-1-709131356479
+ARN_CERT_WILDCARD=arn:aws:acm:eu-west-1:709131356479:certificate/212a61bb-99af-475d-a102-021a735f92f2
+ARN_CERT_MARKET=arn:aws:acm:eu-west-1:709131356479:certificate/01a03cda-ef99-462d-9a39-41345bc051b1
+
+DEPLOY_ONLY=0
+VERSION=
+PROG=$(basename $0)
+
+
+cleanup() {
+    echo "=> Removing $TMPDIR"
+    rm -rf $TMPDIR
+}
+
+usage() {
+    cat << EOF
+USAGE: $PROG [--with-downtime] <version>
+
+Create a new elasticbeanstalk environment running the current source code in a
+docker container, labelled with the given version number. Perform the steps:
+
+OPTIONS:
+  --with-downtime:  Deploy to current environment instead of creating a new one
+                    then swapping. This implies downtime.
+
+EOF
+}
+
+parse_args() {
+    while [ "$1" != "" ]; do
+        case $1 in
+            "--debug")         set -x; DEBUG='true';;
+            "--with-downtime") export DEPLOY_ONLY=1;;
+            "-h" | "--help")   usage; exit 0;;
+            *)                 VERSION=$1;;
+        esac
+        shift
+    done
+}
+
+parse_args $ARGS
+
+if [ -z "$VERSION" ]; then
+    usage
+    exit 1
+fi
+
+IS_DIRTY_CLONE=$(git status --short --porcelain | wc -l)
+if [ "$IS_DIRTY_CLONE" -gt 0 ]; then
+    echo "ERROR: this clone is not clean! Commit and re-run."
+#    exit 1
+fi
+
+ROOTDIR=$(git rev-parse --show-toplevel)
+if [ "$PWD" != "$ROOTDIR" ]; then
+    echo "ERROR: current dir is not the clone's root directory"
+    exit 1
+fi
+
+if [ ! -e "env.secrets" ]; then
+    echo "ERROR: not env.lst in current dir"
+    exit 1
+fi
+
+DOCKERRUN_TEMPLATE=$ROOTDIR/../backend-skeleton/Dockerrun.aws.json.template
+if [ ! -e "$DOCKERRUN_TEMPLATE" ]; then
+    echo "ERROR: cannot find $DOCKERRUN_TEMPLATE"
+    exit 1
+fi
+
+PROJECT_NAME=$(print_project_name)
+TMPDIR=`mktemp -d /tmp/$PROJECT_NAME.XXXXXX` || exit 1
+mkdir -p $TMPDIR
+echo "=> Copying clone to $TMPDIR"
+cp -LR * \
+    .elasticbeanstalk \
+    .ebextensions \
+    .git \
+    .gitignore \
+    $TMPDIR
+
+cd $TMPDIR
+
+if [ -z "$AUTH0_CLIENT_SECRET_KLUE" ]; then
+    echo "ERROR: AUTH0_CLIENT_SECRET_KLUE is not set"
+    exit 1
+fi
+
+tell_slack "WARNING: a new version of service $PROJECT_NAME is being released"
+
+echo "=> Generating .ebextensions/aws-secrets.config"
+mkdir -p .ebextensions
+echo "option_settings:" > .ebextensions/aws-secrets.config
+for VAR in $(cat env.secrets | grep -v '#')
+do
+    echo "   Adding $VAR"
+    VALUE=$(env | grep "^$VAR=" | cut -d '=' -f 2)
+    if [ -z "$VALUE" ]; then
+        echo "ERROR: variable $VAR has no value in env"
+        exit 1
+    fi
+    echo "  - option_name: $VAR" >> .ebextensions/aws-secrets.config
+    echo "    value: $VALUE" >> .ebextensions/aws-secrets.config
+done
+
+
+echo "=> Generating Dockerrun.aws.json for version $VERSION"
+cat $DOCKERRUN_TEMPLATE \
+    | sed -e "s/backend-skeleton/$PROJECT_NAME/g" \
+    | sed -e "s/VERSION/$VERSION/" \
+    > Dockerrun.aws.json
+
+echo "=> Re-add .ebextensions to git"
+cat .gitignore | grep -v ebextensions > .gitignore.tmp
+mv .gitignore.tmp .gitignore
+
+echo "=> Commiting aws-secrets and Dockerrun.aws.json (temporary)"
+COMMIT_MSG="Commiting Dockerrun.aws.json and .ebextensions prior to eb deploy (Please undo after)"
+git add -f Dockerrun.aws.json
+git add -f .ebextensions/*
+git add -f .gitignore
+git commit -m "$COMMIT_MSG"
+
+# TODO: make sure there is an environment. Create one?
+unset AWS_ACCESS_KEY_ID
+unset AWS_SECRET_ACCESS_KEY
+
+CURRENT_ENV_NAME=$(get_live_environment)
+echo "=> Current live environment is $CURRENT_ENV_NAME"
+
+
+# From here on, handle errors manually
+set +e
+
+#
+# Doing a blue/green deployment - No downtime
+#
+
+NEW_ENV_NAME=$PROJECT_NAME-$VERSION
+
+C=$(eb list | grep $NEW_ENV_NAME | wc -l)
+if [ $C -ne 0 ]; then
+    echo "ERROR: this environment is already deployed. Delete it first."
+    exit 1
+fi
+
+if [ "$PROJECT_NAME" == 'www' ]; then
+    # Need disk for logs...
+    EB_INSTANCE_TYPE='t2.small'
+fi
+
+if [ "$PROJECT_NAME" == 'market' ]; then
+    EB_INSTANCE_TYPE='t2.small'
+fi
+
+if [ $DEPLOY_ONLY -eq 1 ]; then
+
+    #
+    # Doing an eb deploy - This will cause downtime
+    #
+
+    echo "=> Deploying $PROJECT_NAME $VERSION to new environment"
+    eb deploy \
+        --label $VERSION \
+        --profile $EB_PROFILE \
+        --timeout $EB_TIMEOUT \
+        $NEW_ENV_NAME
+
+    RC=$?
+    if [ "$RC" -ne 0 ]; then
+        tell_slack "Failed to deploy version $VERSION of $PROJECT_NAME to environment $NEW_ENV_NAME - deploy aborted"
+        exit 1
+    fi
+
+    cleanup
+    exit 0
+fi
+
+#--------------------------------------------------------------------------------
+#
+# The block below was an attempt at creating an environment that starts at once with the
+# right docker app. Creation works fine, but instances end up in flappy state and are
+# recreated a couple of times by auto-scaling before stabilizing, which makes the tests
+# fail each time.
+#
+
+# APP_NAME=$(eb status | grep 'Application name' | awk '{print $3}')
+# echo "=> This application is named [$APP_NAME]"
+# if [ -z $APP_NAME ]; then
+#     echo "ERROR: Failed to identify application name"
+#     exit 1
+# fi
+
+# # Now we bundle this artifact, upload it to s3 and create an application version for it
+# # It should be done by eb create, but isn't...
+# echo "=> Building deploy artifact:"
+# zip -v ${VERSION}.zip Dockerrun.aws.json .ebextensions/*
+
+# echo "=> Uploading ${VERSION}.zip to S3"
+# aws s3 cp ${VERSION}.zip s3://${EB_S3_BUCKET}/$APP_NAME/${VERSION}.zip --profile backend-publish
+
+# echo "=> Create application version $VERSION"
+# aws elasticbeanstalk create-application-version \
+#     --application-name  $APP_NAME \
+#     --version-label $VERSION \
+#     --source-bundle S3Bucket=$EB_S3_BUCKET,S3Key=$APP_NAME/${VERSION}.zip \
+#     --profile $EB_PROFILE \
+#     --process
+
+# # Create new environment
+# echo "=> Creating new environment $NEW_ENV_NAME"
+# eb create \
+#     --profile $EB_PROFILE \
+#     --timeout $EB_TIMEOUT \
+#     --instance_type $EB_INSTANCE_TYPE \
+#     --platform $EB_PLATFORM \
+#     --keyname aws-eb \
+#     --version $VERSION \
+#     $NEW_ENV_NAME
+#
+#--------------------------------------------------------------------------------
+
+# Create new environment
+echo ""
+echo "=> Creating new environment $NEW_ENV_NAME running sample app"
+eb create \
+    --profile $EB_PROFILE \
+    --timeout $EB_TIMEOUT \
+    --instance_type $EB_INSTANCE_TYPE \
+    --platform $EB_PLATFORM \
+    --keyname aws-eb \
+    --sample \
+    $NEW_ENV_NAME
+
+RC=$?
+if [ "$RC" -ne 0 ]; then
+    tell_slack "Failed to create environment $NEW_ENV_NAME - deploy aborted"
+    exit 1
+fi
+
+# Deploy to new environment
+echo ""
+echo "=> Deploying $PROJECT_NAME $VERSION to new environment"
+eb deploy \
+    --label $VERSION \
+    --profile $EB_PROFILE \
+    --timeout $EB_TIMEOUT \
+    $NEW_ENV_NAME
+
+RC=$?
+if [ "$RC" -ne 0 ]; then
+    tell_slack "Failed to deploy version $VERSION of $PROJECT_NAME to environment $NEW_ENV_NAME - deploy aborted"
+    exit 1
+fi
+
+TEST_PORT=80
+
+# Enable https or not?
+export ARN_CERT=
+
+if [ "$PROJECT_NAME" == 'klue-api' ]; then
+    ARN_CERT=$ARN_CERT_WILDCARD
+elif [ "$PROJECT_NAME" == 'xpui' ]; then
+    ARN_CERT=$ARN_CERT_WILDCARD
+elif [ "$PROJECT_NAME" == 'expert' ]; then
+    ARN_CERT=$ARN_CERT_WILDCARD
+elif [ "$PROJECT_NAME" == 'cert' ]; then
+    ARN_CERT=$ARN_CERT_WILDCARD
+elif [ "$PROJECT_NAME" == 'search' ]; then
+    ARN_CERT=$ARN_CERT_WILDCARD
+elif [ "$PROJECT_NAME" == 'cbot' ]; then
+    ARN_CERT=$ARN_CERT_WILDCARD
+elif [ "$PROJECT_NAME" == 'www' ]; then
+    ARN_CERT=$ARN_CERT_WILDCARD
+elif [ "$PROJECT_NAME" == 'seller' ]; then
+    ARN_CERT=$ARN_CERT_WILDCARD
+elif [ "$PROJECT_NAME" == 'item' ]; then
+    ARN_CERT=$ARN_CERT_WILDCARD
+elif [ "$PROJECT_NAME" == 'market' ]; then
+    ARN_CERT=$ARN_CERT_MARKET
+fi
+
+if [ ! -z "$ARN_CERT" ]; then
+
+    TEST_PORT=443
+
+    if [ "$PROJECT_NAME" == 'cert' -o "$PROJECT_NAME" == 'search' -o "$PROJECT_NAME" == 'www' -o "$PROJECT_NAME" == 'cbot' -o "$PROJECT_NAME" == 'seller' -o "$PROJECT_NAME" == 'item' -o "$PROJECT_NAME" == 'market' -o "$PROJECT_NAME" == 'expert' -o "$PROJECT_NAME" == 'login' ]; then
+        # This is an hybrid service, listening on both 80 and 443
+
+        echo ""
+        echo "=> Reconfiguring environment to use both HTTP and HTTPS"
+
+        cat <<EOF > elb-https.json
+[
+    {
+        "Namespace": "aws:elb:listener:443",
+        "OptionName": "SSLCertificateId",
+        "Value": "$ARN_CERT"
+    },
+    {
+        "Namespace": "aws:elb:listener:443",
+        "OptionName": "ListenerProtocol",
+        "Value": "HTTPS"
+    },
+    {
+        "Namespace": "aws:elb:listener:443",
+        "OptionName": "InstancePort",
+        "Value": "80"
+    },
+    {
+        "Namespace": "aws:elb:listener:443",
+        "OptionName": "InstanceProtocol",
+        "Value": "HTTP"
+    },
+    {
+        "Namespace": "aws:elb:listener:80",
+        "OptionName": "ListenerEnabled",
+        "Value": "true"
+    },
+    {
+        "Namespace": "aws:elb:listener:80",
+        "OptionName": "ListenerProtocol",
+        "Value": "HTTP"
+    },
+    {
+        "Namespace": "aws:elb:listener:80",
+        "OptionName": "InstanceProtocol",
+        "Value": "HTTP"
+    },
+    {
+        "Namespace": "aws:elb:listener:443",
+        "OptionName": "InstancePort",
+        "Value": "80"
+    }
+]
+EOF
+
+    else
+        echo ""
+        echo "=> Reconfiguring environment to use HTTPS only"
+
+        # These services listen on 443 only
+        cat <<EOF > elb-https.json
+[
+    {
+        "Namespace": "aws:elb:listener:443",
+        "OptionName": "SSLCertificateId",
+        "Value": "$ARN_CERT"
+    },
+    {
+        "Namespace": "aws:elb:listener:443",
+        "OptionName": "ListenerProtocol",
+        "Value": "HTTPS"
+    },
+    {
+        "Namespace": "aws:elb:listener:443",
+        "OptionName": "InstancePort",
+        "Value": "80"
+    },
+    {
+        "Namespace": "aws:elb:listener:443",
+        "OptionName": "InstanceProtocol",
+        "Value": "HTTP"
+    },
+    {
+        "Namespace": "aws:elb:listener:80",
+        "OptionName": "ListenerEnabled",
+        "Value": "false"
+    }
+]
+EOF
+    fi
+
+    aws elasticbeanstalk update-environment \
+        --environment-name $NEW_ENV_NAME \
+        --profile backend-publish \
+        --option-settings file://elb-https.json
+
+    RC=$?
+    if [ "$RC" -ne 0 ]; then
+        tell_slack "Failed to set HTTPS on $NEW_ENV_NAME - deploy aborted"
+        exit 1
+    fi
+
+    # Now wait for environment to get ready status
+    echo "=> Waiting for environment to be Ready"
+    sleep 3
+
+    STATUS=0
+    while [ "$STATUS" -ne 1 ];
+    do
+        echo "*"
+        sleep 10
+        STATUS=$(eb status $NEW_ENV_NAME --profile backend-publish | grep 'Ready' | wc -l)
+    done
+fi
+
+# Run tests
+URL=$(aws elasticbeanstalk describe-environments --profile $EB_PROFILE --environment-names $NEW_ENV_NAME | grep EndpointURL | awk '{print $2}' | sed -e 's/[\"\,]//g')
+echo ""
+echo "=> New environment is live at $URL"
+run_acceptance_tests --host $URL --port $TEST_PORT --no-ssl-check
+RC=$?
+if [ "$RC" -ne 0 ]; then
+    tell_slack "Acceptance tests failed against $URL - deploy aborted"
+    exit 1
+fi
+
+# Tests passed: swap cnames!
+echo ""
+echo "=> Swapping CNAMES between $NEW_ENV_NAME and $CURRENT_ENV_NAME"
+eb swap $NEW_ENV_NAME -n $CURRENT_ENV_NAME
+RC=$?
+if [ "$RC" -ne 0 ]; then
+    tell_slack "Failed to swap cnames between $NEW_ENV_NAME and $CURRENT_ENV_NAME - deploy aborted"
+    exit 1
+fi
+
+tell_slack "Release of $PROJECT_NAME successful."
+
+# Use new environment as default
+echo "=> Using $NEW_ENV_NAME as default environment"
+eb use $NEW_ENV_NAME
+
+cleanup
+

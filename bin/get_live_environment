@@ -1,0 +1,26 @@
+#!/bin/bash
+
+PROG=$(basename $0)
+
+SHOW_CNAME=
+
+if [ "$1" == "--cname" ]; then
+    SHOW_CNAME=1
+elif [ ! -z $1 ]; then
+    echo "USAGE: $PROG"
+    echo "Tell which elasticbean environment is currently live"
+    exit 0
+fi
+
+NAME=$(eb list | sed -e 's/[\* ]//gm' | sort -n -r | head -n 1);
+CNAME=$(eb status $NAME | grep CNAME | awk '{print $2}')
+if [ ! -z $CNAME ]; then
+    if [ -z "$SHOW_CNAME" ]; then
+        echo $NAME
+    else
+        echo $CNAME
+    fi
+elif [ -z "$NAME" ]; then
+    # 'eb list' is broken...
+    echo "ERROR: Failed to find current live environment"
+fi

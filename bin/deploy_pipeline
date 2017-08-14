@@ -1,0 +1,178 @@
+#!/bin/bash
+
+set -e
+
+ARGS=$@
+
+NAME=$(print_project_name)
+REPONAME=$(print_docker_repo)
+
+
+AWS_REGION=eu-west-1
+AWS_PROFILE=klue-publish
+DOCKER_REPO=$REPONAME/$NAME
+WITH_DOWNTIME=
+
+. env_setup
+
+usage() {
+    cat << EOF
+USAGE: $0 <options>
+
+Build this project. Exit upon error.
+- run local tests
+- build a docker image
+- start image in a container
+- run tests against it
+- push image to amazon EB
+
+OPTIONS:
+
+  --debug:          be very verbose.
+  --test:           only run local tests.
+  --push:           do push image to docker hub.
+  --deploy:         do deploy to aws EB.
+  --no-build:       skip building and testing the container.
+  --with-downtime:  deploy with downtime (see eb_deploy).
+
+EXAMPLES:
+
+# test, build, push, deploy
+./build.sh --push --deploy
+
+# only push
+./build.sh --no-build --push
+
+# only deploy
+./build.sh --no-build --deploy
+
+EOF
+}
+
+# check_symlinked_dependency() {
+#     LINKNAME=$1
+#     PROJECTDIR=$2
+#     ROOTDIR=$(git rev-parse --show-toplevel)
+#     if [ -e "$ROOTDIR/$LINKNAME" ]; then
+#         echo "=> Making sure that $PROJECTDIR is commited and up to date"
+#         HERE=$PWD
+#         cd $PROJECTDIR
+
+#         IS_DIRTY_CLONE=$(git status --short --porcelain | wc -l)
+#         if [ "$IS_DIRTY_CLONE" -gt 0 ]; then
+#             echo "ERROR: $PWD is not clean! Commit and re-run."
+#             exit 1
+#         fi
+
+#         GIT_DIFF_REMOTE=$(git diff master origin | wc -l)
+#         if [ "$GIT_DIFF_REMOTE" -ne 0 ]; then
+#             echo "ERROR: $PWD differs from origin. Please push to origin before releasing!"
+#             exit 1
+#         fi
+
+#         cd $HERE
+#     fi
+# }
+
+do_gen_version() {
+    VERSION=$(print_version)
+    echo "=> Using version: ${VERSION}"
+}
+
+do_get_last_version() {
+    VERSION=$(docker images | grep $DOCKER_REPO | head -n 1 | awk '{ print $2 }')
+    if [ -z "$VERSION" ]; then
+        echo "ERROR: cannot find the latest docker image"
+        exit 1
+    fi
+    echo "=> Using version: ${VERSION}"
+}
+
+do_unit_tests() {
+    if [ -d 'test' ]; then
+        echo "=> Running nosetests"
+        nosetests -xv test/
+    fi
+}
+
+do_acceptance_tests() {
+    IMAGE_ID=$(docker images --quiet ${DOCKER_REPO}:${VERSION})
+    run_acceptance_tests $IMAGE_ID
+}
+
+do_push_to_registry() {
+    # NOTE: for this to work, the running user must have logged in into the
+    # docker hub using 'docker login'
+    set +e
+    IS_LOGGEDIN=$(docker info | grep Username)
+    set -e
+    if [ -z "$IS_LOGGEDIN" ]; then
+        echo "ERROR: please login to docker hub with 'docker login'"
+        exit 1
+    fi
+
+    echo "=> Pushing to registry ${DOCKER_REPO}:${VERSION}"
+    docker push ${DOCKER_REPO}:${VERSION}
+}
+
+DO_PUSH=
+DO_DEPLOY=
+DONT_BUILD=
+
+parse_args() {
+    while [ "$1" != "" ]; do
+        case $1 in
+            "--debug")         set -x; DEBUG='true';;
+            "--no-build")      export DONT_BUILD=1;;
+            "--push")          export DO_PUSH=1;;
+            "--deploy")        export DO_DEPLOY=1;;
+            "--with-downtime") export WITH_DOWNTIME="--with-downtime";;
+            "-h" | "--help")   usage; exit 0;;
+            *)                 echo "Unknown argument '$1' (-h for help)"; exit 0;;
+        esac
+        shift
+    done
+}
+
+parse_args $ARGS
+
+# check_symlinked_dependency 'pnt_common' "$HOME/pnt/backend-common"
+# check_symlinked_dependency 'apis' "$HOME/pnt/api-specs"
+# check_symlinked_dependency 'klue' "$HOME/pnt/klue-client-server"
+
+# if [ "$NAME" == "www" ]; then
+#     check_symlinked_dependency 'pnt_search' "$HOME/pnt/api-search/pnt_search"
+#     check_symlinked_dependency 'pnt_bot' "$HOME/pnt/api-chatbot/pnt_bot"
+#     check_symlinked_dependency 'pnt_cert' "$HOME/pnt/api-cert/pnt_cert"
+#     check_symlinked_dependency 'pnt_seller' "$HOME/pnt/api-seller/pnt_seller"
+#     check_symlinked_dependency 'pnt_item' "$HOME/pnt/api-item/pnt_item"
+#     check_symlinked_dependency 'pnt_expert' "$HOME/pnt/api-expert/pnt_expert"
+#     check_symlinked_dependency 'pnt_login' "$HOME/pnt/api-login/pnt_login"
+# fi
+
+# if [ "$NAME" == "xpui" ]; then
+#     check_symlinked_dependency 'pnt_expert' "$HOME/pnt/api-expert/pnt_expert"
+# fi
+
+if [ -z "$DONT_BUILD" ]; then
+    do_gen_version
+    do_unit_tests
+    build_docker_image $DOCKER_REPO $VERSION
+    do_acceptance_tests
+else
+    do_get_last_version
+fi
+
+if [ ! -z "$DO_PUSH" ]; then
+    do_push_to_registry
+fi
+if [ ! -z "$DO_DEPLOY" ]; then
+    eb_deploy $WITH_DOWNTIME $VERSION
+
+    echo "=> Waiting 1 min for cname swap to propagate"
+    sleep 60
+
+    run_acceptance_tests --live
+fi
+
+echo "=> Done."

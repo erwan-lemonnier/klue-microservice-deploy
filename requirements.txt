@@ -1,0 +1,6 @@
+mock
+nose
+awscli
+awsebcli
+pep8
+

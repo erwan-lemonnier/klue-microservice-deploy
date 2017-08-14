@@ -1,0 +1,59 @@
+#!/bin/bash
+
+set -e
+
+DOCKER_REPO=$1
+VERSION=$2
+PROG=$(basename $0)
+
+if [ -z "$VERSION" -o -z "$DOCKER_REPO" ]; then
+    echo "USAGE: $PROG <docker-repo> <version>"
+    echo "Example: $PROG myservice master-20151112-1222-30-eb2300"
+    exit 1
+fi
+
+IS_DIRTY_CLONE=$(git status --short --porcelain | wc -l)
+if [ "$IS_DIRTY_CLONE" -gt 0 ]; then
+    echo "ERROR: this clone is not clean! Commit and re-run."
+    exit 1
+fi
+
+ROOTDIR=$(git rev-parse --show-toplevel)
+if [ "$PWD" != "$ROOTDIR" ]; then
+    echo "ERROR: current dir is not the clone's root directory"
+    exit 1
+fi
+
+DOCKERFILE_TEMPLATE=$ROOTDIR/../backend-skeleton/Dockerfile.template
+if [ ! -e "$DOCKERFILE_TEMPLATE" ]; then
+    echo "ERROR: cannot find $DOCKERFILE_TEMPLATE"
+    exit 1
+fi
+
+PROJECT_NAME=$(print_project_name)
+
+echo "=> Taring source with git archive"
+mkdir -p docker
+git archive -o docker/klue.tar HEAD
+
+if [ -d 'apis' ]; then
+    tar -rf docker/klue.tar apis/*.yaml
+fi
+
+echo "=> Generating docker/Dockerfile"
+cat $DOCKERFILE_TEMPLATE \
+    | sed -e "s/<VERSION>/$VERSION/" \
+    > docker/Dockerfile
+
+# Remove image if it already exists
+# TODO: make the cleanup optional, so it can be skipped if no changes to project files
+IMAGE_ID=$(docker images --quiet ${DOCKER_REPO}:${VERSION})
+if [ ! -z "$IMAGE_ID" ]; then
+    echo "=> Deleting cached image"
+    docker rmi -f $IMAGE_ID
+fi
+
+echo "=> Building docker image"
+docker build -t ${DOCKER_REPO}:${VERSION} --rm docker
+
+rm docker/Dockerfile
