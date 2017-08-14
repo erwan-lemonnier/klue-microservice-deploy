@@ -4,7 +4,7 @@ set -e
 
 ARGS=$@
 
-EB_PROFILE=backend-publish
+EB_PROFILE=klue-publish
 EB_TIMEOUT=15
 EB_INSTANCE_TYPE=t2.micro
 EB_PLATFORM=docker-1.9.1
@@ -207,7 +207,7 @@ fi
 # zip -v ${VERSION}.zip Dockerrun.aws.json .ebextensions/*
 
 # echo "=> Uploading ${VERSION}.zip to S3"
-# aws s3 cp ${VERSION}.zip s3://${EB_S3_BUCKET}/$APP_NAME/${VERSION}.zip --profile backend-publish
+# aws s3 cp ${VERSION}.zip s3://${EB_S3_BUCKET}/$APP_NAME/${VERSION}.zip --profile $EB_PROFILE
 
 # echo "=> Create application version $VERSION"
 # aws elasticbeanstalk create-application-version \
@@ -383,7 +383,7 @@ EOF
 
     aws elasticbeanstalk update-environment \
         --environment-name $NEW_ENV_NAME \
-        --profile backend-publish \
+        --profile $EB_PROFILE \
         --option-settings file://elb-https.json
 
     RC=$?
@@ -401,7 +401,7 @@ EOF
     do
         echo "*"
         sleep 10
-        STATUS=$(eb status $NEW_ENV_NAME --profile backend-publish | grep 'Ready' | wc -l)
+        STATUS=$(eb status $NEW_ENV_NAME --profile $EB_PROFILE | grep 'Ready' | wc -l)
     done
 fi
 

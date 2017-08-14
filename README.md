@@ -1,20 +1,20 @@
 # klue-aws-toolbox
 
-Tools to deploy a Klue micro service as a Docker container on amazon aws
+Tools to deploy a Klue micro service as a Docker container on amazon Elastic Beanstalk.
 
 ## The toolbox
 
-This toolbox contains useful tools for deploying micro-services built with
+This is a collection of tools for deploying micro-services built with
 [klue-micro-service](https://github.com/erwan-lemonnier/klue-micro-service) as
-Docker containers running inside amazon Beanstalk environments.
+Docker containers running inside amazon Elastic Beanstalk environments.
 
 ## Prerequisites
 
 You will need:
 
-* an amazon aws account with Beanstalk enabled
-* access to a docker registry
-* a Klue micro-service ready to be deployed (clone [klue-micro-service-hello-world](https://github.com/erwan-lemonnier/klue-micro-service-hello-world) to get started)
+* An amazon aws account with Beanstalk enabled
+* Access to a docker registry (like [hub.docker.com](https://hub.docker.com/))
+* A Klue micro-service ready to be deployed (clone [klue-micro-service-hello-world](https://github.com/erwan-lemonnier/klue-micro-service-hello-world) to get started)
 
 ## Setup
 
@@ -23,43 +23,21 @@ micro-service to aws.
 
 ### Install Docker
 
+You need to be able to run a docker container locally on your development host,
+as part of the deployment pipeline for Klue micro-services. Simply install
+docker engine as follows:
+
 ```shell
 apt-get install docker docker-engine
 ```
 
-### Configure aws credentials
+### Create a S3 bucket for docker config
 
-In the Amazon aws console, setup an IAM user called 'klue-publish' with the
-following rights:
+Beanstalk's way of receiving the docker configuration for an image relies on a
+S3 bucket to pass the configuration.
 
-* AmazonEC2ReadOnlyAccess
-* AWSElasticBeanstalkFullAccess
-* And a custom policy with the syntax:
-
-```
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Action": [
-                "s3:GetObject"
-            ],
-            "Resource": [
-                "arn:aws:s3:::config.pnt/docker/dockercfg"
-            ],
-            "Effect": "Allow"
-        }
-    ]
-}
-```
-
-In a terminal on the host from where you will deploy the micro-service, configure
-the aws profile of the klue-publish user:
-
-```shell
-aws configure --profile klue-publish
-# Enter the credentials for backend-publish
-```
+In the amazon aws console, create a S3 bucket named 'klue-config'. In it,
+create an empty directory called 'docker'.
 
 ### Docker registry credentials
 
@@ -70,7 +48,7 @@ docker login
 ```
 
 Find the <auth-token> in ~/.docker/config.json, and upload to
-S3/config.pnt/dockerconfig the following file:
+'S3/klue-config/docker/dockercfg' the following file:
 
 ```shell
 {
@@ -79,6 +57,47 @@ S3/config.pnt/dockerconfig the following file:
     "email": "<your-docker-login-email>"
   }
 }
+```
+
+With that, amazon will know how to fetch your micro-service image from the
+docker registry.
+
+### Configure aws credentials
+
+In the Amazon aws console, setup an IAM user called 'klue-publish' with the
+following rights:
+
+* AmazonEC2ReadOnlyAccess
+* AWSElasticBeanstalkFullAccess
+* And a custom policy giving this user access to the 'klue-config' S3 bucket:
+
+```
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Action": [
+                "s3:GetObject"
+            ],
+            "Resource": [
+                "arn:aws:s3:::klue-config/docker/dockercfg"
+            ],
+            "Effect": "Allow"
+        }
+    ]
+}
+```
+
+Still in the aws console, create an access key for the user 'klue-publish' and
+note its 'Access key ID' and 'Secret access key'.
+
+Then, in a terminal on the host from where you will deploy the micro-service,
+configure the aws profile of the klue-publish user:
+
+```shell
+aws configure --profile klue-publish
+# Enter the 'Access key ID' and 'Secret access key' for klue-publish
+# Choose the default region that suits you (ex: eu-west-1)
 ```
 
 ### Create an Elastic Beanstalk application for your micro-service
@@ -104,6 +123,10 @@ eb init --region eu-west-1 --profile klue-publish
 eb list
 eb use <YOUR_NEW_SERVICE_NAME>
 ```
+
+Calling 'eb use' marks this beanstalk application as the current live instance
+of the micro-service, that will be swapped with the new instance upon every
+deploy.
 
 ## Deploy your micro-service
 
