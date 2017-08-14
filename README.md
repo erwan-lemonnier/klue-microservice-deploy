@@ -41,7 +41,9 @@ create an empty directory called 'docker'.
 
 ### Docker registry credentials
 
-Login into the docker registry:
+Here we assume that you are using hub.docker.com as your image repository.
+
+From a terminal, login into docker hub:
 
 ```shell
 docker login
@@ -148,3 +150,13 @@ Voila! After a few minutes your micro-service will be live, running as a docker
 container in amazon Elastic Beanstalk, with all the goodies of auto-scalling
 and self-repair it offers :-)
 
+## Manual removal of out-dated Beanstalk environment
+
+WARNING! The deploy pipeline does not remove the old application environment
+after swapping it away in favor of a new one. The old environment is kept so
+that you may swap it back into live position should your new environment be
+failing despite all acceptance tests.
+
+Each environment consumes resources in terms of instance time and load
+balancer: you should therefore regularly manually delete old environments from
+your Beanstalk application.
