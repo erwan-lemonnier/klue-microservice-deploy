@@ -15,4 +15,4 @@ WORKDIR /klue
 
 ENV LC_ALL=C.UTF-8
 ENV LANG=C.UTF-8
-CMD /bin/bash -c "source /klue/virtenv/bin/activate; gunicorn --bind 0.0.0.0:80 --config python:pnt_common.gunicorn server:app"
+CMD /bin/bash -c "source /klue/virtenv/bin/activate; gunicorn --bind 0.0.0.0:80 --config python:klue_microservice.gunicorn server:app"
