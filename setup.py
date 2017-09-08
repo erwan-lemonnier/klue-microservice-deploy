@@ -49,7 +49,7 @@ setup(
     test_suite='nose.collector',
     packages=[],
     data_files=[
-        ('/etc/klue', [
+        ('~/.klue', [
             'Dockerfile.base.template',
             'Dockerfile.template',
             'Dockerrun.aws.json.template'
