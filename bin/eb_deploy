@@ -79,6 +79,9 @@ if [ ! -e "$DOCKERRUN_TEMPLATE" ]; then
 fi
 
 PROJECT_NAME=$(print_project_name)
+REPONAME=$(print_docker_repo)
+DOCKER_REPO=$REPONAME/$PROJECT_NAME
+
 TMPDIR=`mktemp -d /tmp/$PROJECT_NAME.XXXXXX` || exit 1
 mkdir -p $TMPDIR
 echo "=> Copying clone to $TMPDIR"
@@ -116,8 +119,9 @@ done
 
 echo "=> Generating Dockerrun.aws.json for version $VERSION"
 cat $DOCKERRUN_TEMPLATE \
-    | sed -e "s/backend-skeleton/$PROJECT_NAME/g" \
-    | sed -e "s/VERSION/$VERSION/" \
+    | sed -e "s|FROM whatever/|FROM $REPONAME/|g" \
+    | sed -e "s|whatever/foobar|$DOCKER_REPO|g" \
+    | sed -e "s|VERSION|$VERSION|" \
     > Dockerrun.aws.json
 
 echo "=> Re-add .ebextensions to git"

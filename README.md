@@ -1,11 +1,12 @@
 # klue-aws-toolbox
 
-Tools to deploy a Klue micro service as a Docker container on amazon Elastic Beanstalk.
+Tools to deploy a Klue micro service as a Docker container on amazon Elastic
+Beanstalk.
 
 ## The toolbox
 
 This is a collection of tools for deploying micro-services built with
-[klue-micro-service](https://github.com/erwan-lemonnier/klue-micro-service) as
+[klue-microservice](https://github.com/erwan-lemonnier/klue-microservice) as
 Docker containers running inside amazon Elastic Beanstalk environments.
 
 ## Prerequisites
@@ -14,7 +15,7 @@ You will need:
 
 * An amazon aws account with Beanstalk enabled
 * Access to a docker registry (like [hub.docker.com](https://hub.docker.com/))
-* A Klue micro-service ready to be deployed (clone [klue-micro-service-hello-world](https://github.com/erwan-lemonnier/klue-micro-service-hello-world) to get started)
+* A Klue micro-service ready to be deployed (clone [klue-microservice-helloworld](https://github.com/erwan-lemonnier/klue-microservice-helloworld) to get started)
 
 ## Setup
 
@@ -36,8 +37,8 @@ apt-get install docker docker-engine
 Beanstalk's way of receiving the docker configuration for an image relies on a
 S3 bucket to pass the configuration.
 
-In the amazon aws console, create a S3 bucket named 'klue-config'. In it,
-create an empty directory called 'docker'.
+In the amazon aws console, create a S3 bucket with a name of your choice
+<MY_BUCKET_NAME>. In this bucket, create an empty directory called 'docker'.
 
 ### Docker registry credentials
 
@@ -66,8 +67,8 @@ docker registry.
 
 ### Configure aws credentials
 
-In the Amazon aws console, setup an IAM user called 'klue-publish' with the
-following rights:
+In the Amazon aws console, setup an IAM user with the name of your choice,
+<IAM_USER_NAME> with the following rights:
 
 * AmazonEC2ReadOnlyAccess
 * AWSElasticBeanstalkFullAccess
@@ -82,7 +83,7 @@ following rights:
                 "s3:GetObject"
             ],
             "Resource": [
-                "arn:aws:s3:::klue-config/docker/dockercfg"
+                "arn:aws:s3:::<MY_BUCKET_NAME>/docker/dockercfg"
             ],
             "Effect": "Allow"
         }
@@ -90,14 +91,14 @@ following rights:
 }
 ```
 
-Still in the aws console, create an access key for the user 'klue-publish' and
+Still in the aws console, create an access key for the user <IAM_USER_NAME> and
 note its 'Access key ID' and 'Secret access key'.
 
 Then, in a terminal on the host from where you will deploy the micro-service,
 configure the aws profile of the klue-publish user:
 
 ```shell
-aws configure --profile klue-publish
+aws configure --profile <IAM_USER_NAME>
 # Enter the 'Access key ID' and 'Secret access key' for klue-publish
 # Choose the default region that suits you (ex: eu-west-1)
 ```
@@ -120,7 +121,7 @@ From the root directory of your micro-service:
 ```shell
 unset AWS_ACCESS_KEY_ID
 unset AWS_SECRET_ACCESS_KEY
-eb init --region eu-west-1 --profile klue-publish
+eb init --region eu-west-1 --profile <IAM_USER_NAME>
 
 eb list
 eb use <YOUR_NEW_SERVICE_NAME>
@@ -129,6 +130,19 @@ eb use <YOUR_NEW_SERVICE_NAME>
 Calling 'eb use' marks this beanstalk application as the current live instance
 of the micro-service, that will be swapped with the new instance upon every
 deploy.
+
+## Configure your klue-microservice
+
+Your klue-microservice project should contain in its root a file called
+'klue-config.yaml' looking like:
+
+```yaml
+name: <YOUR_NEW_SERVICE_NAME>
+docker_repo: <NAME_OF_YOUR_ROOT_REPO_ON_DOCKER.IO>
+docker_s3_bucket: <MY_BUCKET_NAME>
+iam_user: <IAM_USER_NAME>
+ssh_keypair: <NAME_OF_SSH_KEYPAIR_TO_USE_IN_EC2>
+```
 
 ## Deploy your micro-service
 

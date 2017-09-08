@@ -36,11 +36,11 @@ setup(
     author_email='erwan@lemonnier.se',
     description='Tools to run a Klue micro-service on Amazon aws/docker',
     install_requires=[
-        'awsebcli',
+        'awsebcli==3.0.5',
         'awscli',
     ],
     tests_require=[
-        'awsebcli',
+        'awsebcli==3.0.5',
         'awscli',
         'nose',
         'mock',

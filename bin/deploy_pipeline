@@ -4,16 +4,21 @@ set -e
 
 ARGS=$@
 
-NAME=$(print_project_name)
-REPONAME=$(print_docker_repo)
-
-
-AWS_REGION=eu-west-1
-AWS_PROFILE=klue-publish
-DOCKER_REPO=$REPONAME/$NAME
 WITH_DOWNTIME=
 
-. env_setup
+if [ ! -e 'klue-config.yaml' ]; then
+    echo "ERROR: no klue-config.yaml in current dir"
+    exit 1
+fi
+
+NAME=$(cat klue-config.yaml | grep name | awk '{ print $2}')
+DOCKER_ROOT_REPO=$(cat klue-config.yaml | grep docker_repo | awk '{ print $2}')
+AWS_REGION=$(cat klue-config.yaml | grep aws-region | awk '{ print $2}')
+AWS_PROFILE=$(cat klue-config.yaml | grep iam_user | awk '{ print $2}')
+DOCKER_REPO=$DOCKER_ROOT_REPO/$NAME
+DOCKER_BUCKET=$(cat klue-config.yaml | grep docker_s3_bucket | awk '{ print $2}')
+
+# . env_setup
 
 usage() {
     cat << EOF
@@ -49,30 +54,19 @@ EXAMPLES:
 EOF
 }
 
-# check_symlinked_dependency() {
-#     LINKNAME=$1
-#     PROJECTDIR=$2
-#     ROOTDIR=$(git rev-parse --show-toplevel)
-#     if [ -e "$ROOTDIR/$LINKNAME" ]; then
-#         echo "=> Making sure that $PROJECTDIR is commited and up to date"
-#         HERE=$PWD
-#         cd $PROJECTDIR
+do_check_git_repo() {
+    IS_DIRTY_CLONE=$(git status --short --porcelain | wc -l)
+    if [ "$IS_DIRTY_CLONE" -gt 0 ]; then
+        echo "ERROR: $PWD is not clean! Commit and re-run."
+        exit 1
+    fi
 
-#         IS_DIRTY_CLONE=$(git status --short --porcelain | wc -l)
-#         if [ "$IS_DIRTY_CLONE" -gt 0 ]; then
-#             echo "ERROR: $PWD is not clean! Commit and re-run."
-#             exit 1
-#         fi
-
-#         GIT_DIFF_REMOTE=$(git diff master origin | wc -l)
-#         if [ "$GIT_DIFF_REMOTE" -ne 0 ]; then
-#             echo "ERROR: $PWD differs from origin. Please push to origin before releasing!"
-#             exit 1
-#         fi
-
-#         cd $HERE
-#     fi
-# }
+    GIT_DIFF_REMOTE=$(git diff master origin/master | wc -l)
+    if [ "$GIT_DIFF_REMOTE" -ne 0 ]; then
+        echo "ERROR: $PWD differs from origin. Please push to origin before releasing!"
+        exit 1
+    fi
+}
 
 do_gen_version() {
     VERSION=$(print_version)
@@ -136,23 +130,7 @@ parse_args() {
 
 parse_args $ARGS
 
-# check_symlinked_dependency 'pnt_common' "$HOME/pnt/backend-common"
-# check_symlinked_dependency 'apis' "$HOME/pnt/api-specs"
-# check_symlinked_dependency 'klue' "$HOME/pnt/klue-client-server"
-
-# if [ "$NAME" == "www" ]; then
-#     check_symlinked_dependency 'pnt_search' "$HOME/pnt/api-search/pnt_search"
-#     check_symlinked_dependency 'pnt_bot' "$HOME/pnt/api-chatbot/pnt_bot"
-#     check_symlinked_dependency 'pnt_cert' "$HOME/pnt/api-cert/pnt_cert"
-#     check_symlinked_dependency 'pnt_seller' "$HOME/pnt/api-seller/pnt_seller"
-#     check_symlinked_dependency 'pnt_item' "$HOME/pnt/api-item/pnt_item"
-#     check_symlinked_dependency 'pnt_expert' "$HOME/pnt/api-expert/pnt_expert"
-#     check_symlinked_dependency 'pnt_login' "$HOME/pnt/api-login/pnt_login"
-# fi
-
-# if [ "$NAME" == "xpui" ]; then
-#     check_symlinked_dependency 'pnt_expert' "$HOME/pnt/api-expert/pnt_expert"
-# fi
+do_check_git_repo
 
 if [ -z "$DONT_BUILD" ]; then
     do_gen_version
