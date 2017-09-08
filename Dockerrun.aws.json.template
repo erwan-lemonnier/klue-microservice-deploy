@@ -1,0 +1,17 @@
+{
+  "AWSEBDockerrunVersion": "1",
+  "Image": {
+    "Name": "whatever/foobar:VERSION",
+    "Update": "true"
+  },
+  "Authentication": {
+      "Bucket": "klue-config",
+      "Key": "docker/dockercfg"
+  },
+  "Ports": [
+    {
+      "ContainerPort": "80"
+    }
+  ],
+  "Logging": "/var/log/"
+}

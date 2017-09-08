@@ -1,0 +1,18 @@
+FROM whatever/klue-base:170221-2134-177
+MAINTAINER Erwan Lemonnier <erwan@lemonnier.se>
+
+# install application
+ADD klue.tar /klue
+RUN echo "<VERSION>" > /klue/VERSION
+RUN /bin/bash -c "source /klue/virtenv/bin/activate; pip install -r /klue/requirements.txt --upgrade"
+RUN /bin/bash -c "source /klue/virtenv/bin/activate; pip install klue-client-server --upgrade"
+RUN /bin/bash -c "source /klue/virtenv/bin/activate; python -V"
+RUN /bin/bash -c "source /klue/virtenv/bin/activate; pip freeze"
+
+EXPOSE 80
+VOLUME ["/var/log"]
+WORKDIR /klue
+
+ENV LC_ALL=C.UTF-8
+ENV LANG=C.UTF-8
+CMD /bin/bash -c "source /klue/virtenv/bin/activate; gunicorn --bind 0.0.0.0:80 --config python:pnt_common.gunicorn server:app"
