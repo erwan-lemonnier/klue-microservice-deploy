@@ -1,6 +1,7 @@
 from setuptools import setup
 import sys
 import os
+from glob import glob
 
 version = None
 
