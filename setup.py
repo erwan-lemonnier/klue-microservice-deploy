@@ -52,7 +52,7 @@ setup(
     packages=[],
     scripts=glob("bin/*"),
     data_files=[
-        ('/etc', [
+        ('/etc/klue', [
             'Dockerfile.base.template',
             'Dockerfile.template',
             'Dockerrun.aws.json.template'
