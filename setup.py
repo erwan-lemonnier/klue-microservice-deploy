@@ -51,13 +51,6 @@ setup(
     test_suite='nose.collector',
     packages=[],
     scripts=glob("bin/*"),
-    data_files=[
-        ('/etc/klue', [
-            'Dockerfile.base.template',
-            'Dockerfile.template',
-            'Dockerrun.aws.json.template'
-        ]),
-    ],
     package_data={'': ['*.template']},
     zip_safe=False,
     include_package_data=True,
