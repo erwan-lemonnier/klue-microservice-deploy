@@ -50,10 +50,9 @@ setup(
     ],
     test_suite='nose.collector',
     packages=['klue_docker_templates'],
-    package_data={'klue_docker_templates': ['Dockerfile.base.template', 'Dockerfile.template', 'Dockerrun.aws.json.template']},
+    package_data={'klue_docker_templates': ['*.template']},
     scripts=glob("bin/*"),
     zip_safe=False,
-    include_package_data=True,
     platforms='any',
     classifiers=[
         'Environment :: Web Environment',
