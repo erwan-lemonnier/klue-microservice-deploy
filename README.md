@@ -138,11 +138,15 @@ In the Amazon aws console, setup an IAM user with the name of your choice,
 }
 ```
 
-Still in the aws console, create an access key for the user <IAM_USER_NAME> and
-note its 'Access key ID' and 'Secret access key'.
+Still in the IAM console, attach the custom policy to
+'aws-elasticbeanstalk-ec2-role' and 'aws-elasticbeanstalk-service-role'.
 
-Then, in a terminal on the host from where you will deploy the micro-service,
-configure the aws profile of the klue-publish user:
+Then, under the user's 'Security Crendetials' in the IAM console, create an
+access key for the user <IAM_USER_NAME> and note its 'Access key ID' and
+'Secret access key'.
+
+In a terminal on the host from which you will deploy the microservice,
+configure the aws profile of the <IAM_USER_NAME>:
 
 ```shell
 aws configure --profile <IAM_USER_NAME>
