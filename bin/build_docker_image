@@ -67,7 +67,7 @@ do
         $LINK
 done
 
-echo "=> Docker image contains files:"
+echo "=> Docker image will contain files:"
 tar -tvf docker/klue.tar
 
 echo "=> Generating docker/Dockerfile"
