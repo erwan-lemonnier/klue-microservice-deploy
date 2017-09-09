@@ -2,7 +2,8 @@
 
 set -e
 
-DOCKER_REPO=peop/klue-base
+DOCKER_ROOT_REPO=$(klue_config --docker-repo)
+DOCKER_REPO=$DOCKER_ROOT_REPO/klue-base
 VERSION=$(print_version)
 
 IS_DIRTY_CLONE=$(git status --short --porcelain | wc -l)
@@ -17,7 +18,7 @@ if [ "$PWD" != "$ROOTDIR" ]; then
     exit 1
 fi
 
-DOCKERFILE_TEMPLATE=$ROOTDIR/../backend-skeleton/Dockerfile.base.template
+DOCKERFILE_TEMPLATE=$(get_docker_template_path --base)
 if [ ! -e "$DOCKERFILE_TEMPLATE" ]; then
     echo "ERROR: cannot find $DOCKERFILE_TEMPLATE"
     exit 1

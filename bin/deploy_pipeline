@@ -11,12 +11,12 @@ if [ ! -e 'klue-config.yaml' ]; then
     exit 1
 fi
 
-NAME=$(cat klue-config.yaml | grep name | awk '{ print $2}')
-DOCKER_ROOT_REPO=$(cat klue-config.yaml | grep docker_repo | awk '{ print $2}')
-AWS_REGION=$(cat klue-config.yaml | grep aws-region | awk '{ print $2}')
-AWS_PROFILE=$(cat klue-config.yaml | grep iam_user | awk '{ print $2}')
+NAME=$(klue_config --name)
+DOCKER_ROOT_REPO=$(klue_config --docker-repo)
+AWS_REGION=$(klue_config --aws-region)
+AWS_PROFILE=$(klue_config --aws-user)
 DOCKER_REPO=$DOCKER_ROOT_REPO/$NAME
-DOCKER_BUCKET=$(cat klue-config.yaml | grep docker_s3_bucket | awk '{ print $2}')
+DOCKER_BUCKET=$(klue_config --docker-bucket)
 
 # . env_setup
 
@@ -112,11 +112,12 @@ do_push_to_registry() {
 DO_PUSH=
 DO_DEPLOY=
 DONT_BUILD=
+WITH_DEBUG=
 
 parse_args() {
     while [ "$1" != "" ]; do
         case $1 in
-            "--debug")         set -x; DEBUG='true';;
+            "--debug")         set -x; DEBUG='true'; WITH_DEBUG="--debug";;
             "--no-build")      export DONT_BUILD=1;;
             "--push")          export DO_PUSH=1;;
             "--deploy")        export DO_DEPLOY=1;;
@@ -133,24 +134,24 @@ parse_args $ARGS
 do_check_git_repo
 
 if [ -z "$DONT_BUILD" ]; then
-    do_gen_version
-    do_unit_tests
-    build_docker_image $DOCKER_REPO $VERSION
-    do_acceptance_tests
+    do_gen_version $WITH_DEBUG
+    do_unit_tests $WITH_DEBUG
+    build_docker_image $DOCKER_REPO $VERSION $WITH_DEBUG
+    do_acceptance_tests $WITH_DEBUG
 else
-    do_get_last_version
+    do_get_last_version $WITH_DEBUG
 fi
 
 if [ ! -z "$DO_PUSH" ]; then
-    do_push_to_registry
+    do_push_to_registry $WITH_DEBUG
 fi
 if [ ! -z "$DO_DEPLOY" ]; then
-    eb_deploy $WITH_DOWNTIME $VERSION
+    eb_deploy $WITH_DOWNTIME $VERSION $WITH_DEBUG
 
     echo "=> Waiting 1 min for cname swap to propagate"
     sleep 60
 
-    run_acceptance_tests --live
+    run_acceptance_tests --live $WITH_DEBUG
 fi
 
 echo "=> Done."

@@ -5,7 +5,7 @@
     "Update": "true"
   },
   "Authentication": {
-      "Bucket": "klue-config",
+      "Bucket": "DOCKER_BUCKET",
       "Key": "docker/dockercfg"
   },
   "Ports": [

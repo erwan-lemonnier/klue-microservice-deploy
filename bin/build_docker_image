@@ -24,13 +24,14 @@ if [ "$PWD" != "$ROOTDIR" ]; then
     exit 1
 fi
 
-DOCKERFILE_TEMPLATE=$ROOTDIR/../backend-skeleton/Dockerfile.template
+DOCKERFILE_TEMPLATE=$(get_docker_template_path --app)
 if [ ! -e "$DOCKERFILE_TEMPLATE" ]; then
     echo "ERROR: cannot find $DOCKERFILE_TEMPLATE"
     exit 1
 fi
 
-PROJECT_NAME=$(print_project_name)
+PROJECT_NAME=$(klue_config --name)
+DOCKER_ROOT_REPO=$(klue_config --docker-repo)
 
 echo "=> Taring source with git archive"
 mkdir -p docker
@@ -43,6 +44,7 @@ fi
 echo "=> Generating docker/Dockerfile"
 cat $DOCKERFILE_TEMPLATE \
     | sed -e "s/<VERSION>/$VERSION/" \
+    | sed -e "s/whatever/$DOCKER_ROOT_REPO/" \
     > docker/Dockerfile
 
 # Remove image if it already exists
