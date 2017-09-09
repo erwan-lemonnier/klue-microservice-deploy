@@ -3,7 +3,11 @@
 import os
 import sys
 import click
-import pkg_resources
+
+PATH_LIBS=os.path.join(os.path.dirname(os.path.realpath(__file__)), '..')
+sys.path.append(PATH_LIBS)
+
+from klue_docker_templates import locate
 
 @click.command()
 @click.option('--base/--no-base', help="Return the path of the Klue base image's template", default=False)
@@ -13,19 +17,15 @@ def main(base, app, run):
 
     filename = None
     if base:
-        filename = 'klue_docker_templates/Dockerfile.base.template'
+        filename = 'Dockerfile.base.template'
     elif app:
-        filename = 'klue_docker_templates/Dockerfile.template'
+        filename = 'Dockerfile.template'
     elif run:
-        filename = 'klue_docker_templates/Dockerrun.aws.json.template'
+        filename = 'Dockerrun.aws.json.template'
     else:
         raise Exception("Unknown template")
 
-    path = pkg_resources.resource_filename(__name__, filename)
-    if not os.path.isfile(path):
-        path = os.path.join(os.path.dirname(sys.modules[__name__].__file__), filename)
-
-    print(path)
+    print(locate(filename))
 
 if __name__ == "__main__":
     main()
