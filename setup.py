@@ -49,9 +49,9 @@ setup(
         'pep8'
     ],
     test_suite='nose.collector',
-    packages=[],
+    packages=['klue_docker_templates'],
     scripts=glob("bin/*"),
-    package_data={'': ['*.template']},
+    package_data={'klue_docker_templates': ['*.template']},
     zip_safe=False,
     include_package_data=True,
     platforms='any',

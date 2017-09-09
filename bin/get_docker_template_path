@@ -13,17 +13,17 @@ def main(base, app, run):
 
     filename = None
     if base:
-        filename = 'Dockerfile.base.template'
+        filename = 'klue_docker_templates/Dockerfile.base.template'
     elif app:
-        filename = 'Dockerfile.template'
+        filename = 'klue_docker_templates/Dockerfile.template'
     elif run:
-        filename = 'Dockerrun.aws.json.template'
+        filename = 'klue_docker_templates/Dockerrun.aws.json.template'
     else:
         raise Exception("Unknown template")
 
     path = pkg_resources.resource_filename(__name__, filename)
     if not os.path.isfile(path):
-        path = os.path.join(os.path.dirname(sys.modules[__name__].__file__), '..', filename)
+        path = os.path.join(os.path.dirname(sys.modules[__name__].__file__), filename)
 
     print(path)
 
