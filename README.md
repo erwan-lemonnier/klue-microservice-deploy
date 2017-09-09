@@ -3,11 +3,56 @@
 Tools to deploy a Klue micro service as a Docker container on amazon Elastic
 Beanstalk.
 
-## The toolbox
+## Deployment pipeline
 
-This is a collection of tools for deploying micro-services built with
+[/bin](https://github.com/erwan-lemonnier/klue-aws-toolbox/tree/master/bin)
+contains tools for deploying micro-services built with
 [klue-microservice](https://github.com/erwan-lemonnier/klue-microservice) as
 Docker containers running inside amazon Elastic Beanstalk environments.
+
+### deploy_pipeline
+
+[deploy_pipeline](https://github.com/erwan-lemonnier/klue-aws-toolbox/blob/master/bin/deploy_pipeline)
+implements the deployment pipeline of Klue microservices, which consists of the
+following steps:
+
+1. Generate a docker image in which the app starts inside gunicorn.
+1. Starts this image locally and run acceptance tests against it. Stop if tests fails.
+1. Push that image to hub.docker.io
+1. Start an Elastic Beanstalk environment running single-container docker instances, and
+load the app image in it
+1. Run the acceptance tests again, this time against the Beanstalk environment. Stop if tests fail.
+1. Swap the new Beanstalk environment with the current live one ([blue/green
+deployment](http://docs.aws.amazon.com/elasticbeanstalk/latest/dg/using-features.CNAMESwap.html)).
+Your app is now live!
+1. Run acceptance tests again, this time against the live environment
+
+### Usage
+
+To execute the full deployment pipeline, do:
+
+```
+cd your-project-root
+deploy_pipeline --push --deploy
+```
+
+To execute only steps 1 to 3:
+
+```
+deploy_pipeline --push
+```
+
+To only push the image to hub.docker.io:
+
+```
+deploy_pipeline --no-build --push
+```
+
+To only deploy to amazon:
+
+```
+deploy_pipeline --no-build --deploy
+```
 
 ## Prerequisites
 
