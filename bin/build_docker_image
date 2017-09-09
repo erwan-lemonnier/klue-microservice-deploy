@@ -12,11 +12,28 @@ if [ -z "$VERSION" -o -z "$DOCKER_REPO" ]; then
     exit 1
 fi
 
-IS_DIRTY_CLONE=$(git status --short --porcelain | wc -l)
-if [ "$IS_DIRTY_CLONE" -gt 0 ]; then
-    echo "ERROR: this clone is not clean! Commit and re-run."
-    exit 1
-fi
+check_git_clean() {
+    DIR=$1
+
+    HERE=$PWD
+    cd $DIR
+    IS_DIRTY_CLONE=$(git status --short --porcelain | wc -l)
+    if [ "$IS_DIRTY_CLONE" -gt 0 ]; then
+        ROOTDIR=$(git rev-parse --show-toplevel)
+        ROOTDIR=$(basename $ROOTDIR)
+        echo "ERROR: project $ROOTDIR is not clean! Commit and re-run."
+        exit 1
+    fi
+    cd $HERE
+}
+
+check_git_clean '.'
+
+for LINK in $(klue_config --include-links)
+do
+    check_git_clean $LINK
+done
+
 
 ROOTDIR=$(git rev-parse --show-toplevel)
 if [ "$PWD" != "$ROOTDIR" ]; then
@@ -40,6 +57,18 @@ git archive -o docker/klue.tar HEAD
 if [ -d 'apis' ]; then
     tar -rf docker/klue.tar apis/*.yaml
 fi
+
+for LINK in $(klue_config --include-links)
+do
+    tar --dereference \
+        -rf docker/klue.tar \
+        --exclude='*.pyc' \
+        --exclude='*__pycache__*' \
+        $LINK
+done
+
+echo "=> Docker image contains files:"
+tar -tvf docker/klue.tar
 
 echo "=> Generating docker/Dockerfile"
 cat $DOCKERFILE_TEMPLATE \
