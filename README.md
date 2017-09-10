@@ -85,7 +85,7 @@ Beanstalk's way of receiving the docker configuration for an image relies on a
 S3 bucket to pass the configuration.
 
 In the amazon aws console, create a S3 bucket with a name of your choice
-<MY_BUCKET_NAME>. In this bucket, create an empty directory called 'docker'.
+<DOCKER_CFG_BUCKET>. In this bucket, create an empty directory called 'docker'.
 
 ### Docker registry credentials
 
@@ -130,7 +130,7 @@ In the Amazon aws console, setup an IAM user with the name of your choice,
                 "s3:GetObject"
             ],
             "Resource": [
-                "arn:aws:s3:::<MY_BUCKET_NAME>/docker/dockercfg"
+                "arn:aws:s3:::<DOCKER_CFG_BUCKET>/docker/dockercfg"
             ],
             "Effect": "Allow"
         }
@@ -190,7 +190,7 @@ Your klue-microservice project should contain in its root a file called
 ```yaml
 name: <YOUR_NEW_SERVICE_NAME>
 docker_repo: <NAME_OF_YOUR_ROOT_REPO_ON_DOCKER.IO>
-docker_s3_bucket: <MY_BUCKET_NAME>
+docker_s3_bucket: <DOCKER_CFG_BUCKET>
 iam_user: <IAM_USER_NAME>
 ssh_keypair: <NAME_OF_SSH_KEYPAIR_TO_USE_IN_EC2>
 ```
