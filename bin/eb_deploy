@@ -135,6 +135,7 @@ git commit -m "$COMMIT_MSG"
 # TODO: make sure there is an environment. Create one?
 unset AWS_ACCESS_KEY_ID
 unset AWS_SECRET_ACCESS_KEY
+unset AWS_DEFAULT_REGION
 
 CURRENT_ENV_NAME=$(get_live_environment)
 echo "=> Current live environment is $CURRENT_ENV_NAME"
