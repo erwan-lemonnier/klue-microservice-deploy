@@ -1,4 +1,4 @@
-klue_aws_toolbox.egg-info/
+klue_microservice_deploy.egg-info/
 dist/
 **/__pycache__
 *.tar
