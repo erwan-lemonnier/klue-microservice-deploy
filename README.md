@@ -1,11 +1,12 @@
-# klue-aws-toolbox
+# klue-microservice-deploy
 
-Tools to deploy a Klue micro service as a Docker container on amazon Elastic
-Beanstalk.
+A deployment pipeline for Klue microservices, deploying them as Docker
+containers on amazon Elastic Beanstalk.
 
 ## Deployment pipeline
 
-[/bin](https://github.com/erwan-lemonnier/klue-aws-toolbox/tree/master/bin)
+The directory
+[/bin](https://github.com/erwan-lemonnier/klue-microservice-deploy/tree/master/bin)
 contains tools for deploying micro-services built with
 [klue-microservice](https://github.com/erwan-lemonnier/klue-microservice) as
 Docker containers running inside amazon Elastic Beanstalk environments.
@@ -16,16 +17,31 @@ Docker containers running inside amazon Elastic Beanstalk environments.
 implements the deployment pipeline of Klue microservices, which consists of the
 following steps:
 
+1. Execute unittests under 'test/' with nosetests. Stop if tests fail.
+
 1. Generate a docker image in which the app starts inside gunicorn.
-1. Start this image locally and run acceptance tests against it. Stop if tests fails.
-1. Push that image to hub.docker.io
-1. Start an Elastic Beanstalk environment running single-container docker instances, and
-load the app image in it
-1. Run the acceptance tests again, this time against the Beanstalk environment. Stop if tests fail.
+
+1. Start this image in a local docker instance and run acceptance tests from
+   the 'testaccept/' directory against it. Stop if tests fail.
+
+1. Push that image to hub.docker.com.
+
+1. Start an Elastic Beanstalk environment running single-container docker
+   instances, and load the app image in it.
+
+1. Run the acceptance tests again, this time against the Beanstalk
+   environment. Stop if tests fail.
+
 1. Swap the new Beanstalk environment with the current live one ([blue/green
-deployment](http://docs.aws.amazon.com/elasticbeanstalk/latest/dg/using-features.CNAMESwap.html)).
-Your app is now live!
-1. Run acceptance tests again, this time against the live environment
+   deployment](http://docs.aws.amazon.com/elasticbeanstalk/latest/dg/using-features.CNAMESwap.html)).
+   Your app is now live!
+
+1. Run acceptance tests again, this time against the live environment, as a
+   final validation.
+
+Voila! After a few minutes your microservice will be live, running as a docker
+container in Amazon Elastic Beanstalk, with all the goodies of auto-scalling
+and self-repair it offers :-)
 
 ### Usage
 
@@ -36,19 +52,19 @@ cd your-project-root
 deploy_pipeline --push --deploy
 ```
 
-To execute only steps 1 to 3:
+To execute only steps 1 to 4:
 
 ```
 deploy_pipeline --push
 ```
 
-To only push the image to hub.docker.io:
+To only push the image to hub.docker.com:
 
 ```
 deploy_pipeline --no-build --push
 ```
 
-To only deploy to amazon:
+To only deploy to Amazon:
 
 ```
 deploy_pipeline --no-build --deploy
@@ -60,19 +76,23 @@ Easy!
 
 You will need:
 
-* An amazon aws account with Beanstalk enabled
+* An Amazon AWS account with Beanstalk enabled
+
 * Access to a docker registry on [hub.docker.com](https://hub.docker.com/)
-* A Klue microservice ready to be deployed (clone [klue-microservice-helloworld](https://github.com/erwan-lemonnier/klue-microservice-helloworld) to get started)
+
+* A Klue microservice ready to be deployed (clone
+ [klue-microservice-helloworld](https://github.com/erwan-lemonnier/klue-microservice-helloworld)
+ to get started)
 
 ## Setup
 
 Here are the steps you must follow before being able to deploy a Klue
-micro-service to aws.
+micro-service to AWS.
 
 ### Install Docker
 
 You need to be able to run a docker container locally on your development host,
-as part of the deployment pipeline for Klue micro-services. Simply install
+as part of the deployment pipeline for Klue microservices. Simply install
 docker engine as follows:
 
 ```shell
@@ -89,33 +109,34 @@ In the amazon aws console, create a S3 bucket with a name of your choice
 
 ### Docker registry credentials
 
-Here we assume that you are using hub.docker.com as your image repository.
+Here we assume that you are using 'hub.docker.com' as your image repository.
 
-From a terminal, login into docker hub:
+From a terminal, login into docker hub, on the same host where you will run the
+deployment pipeline (to create the '~/.docker/config.json file'):
 
 ```shell
 docker login
 ```
 
-Find the <auth-token> in ~/.docker/config.json, and upload to
+Find the <auth-token> and <email> in '~/.docker/config.json', and upload to
 'S3/klue-config/docker/dockercfg' the following file:
 
 ```shell
 {
   "https://index.docker.io/v1/": {
     "auth": "<auth-token>",
-    "email": "<your-docker-login-email>"
+    "email": "<email>"
   }
 }
 ```
 
-With that, amazon will know how to fetch your micro-service image from the
-docker registry.
+With that, Amazon will be able to fetch your microservice image from the docker
+registry.
 
-### Configure aws credentials
+### Configure AWS credentials
 
-In the Amazon aws console, setup an IAM user with the name of your choice,
-<IAM_USER_NAME> with the following rights:
+In the Amazon AWS console, setup an IAM user with the name of your choice,
+<IAM_USER_NAME>, with the following rights:
 
 * AmazonEC2ReadOnlyAccess
 * AWSElasticBeanstalkFullAccess
@@ -167,7 +188,7 @@ In the Amazon aws console, create an EBS application:
 * Keep all other settings to default
 * Create environment!
 
-From the root directory of your micro-service:
+From the root directory of your microservice:
 
 ```shell
 unset AWS_ACCESS_KEY_ID
@@ -178,14 +199,15 @@ eb list
 eb use <YOUR_NEW_SERVICE_NAME>
 ```
 
-Calling 'eb use' marks this beanstalk application as the current live instance
+Calling 'eb use' marks this Beanstalk application as the current live instance
 of the micro-service, that will be swapped with the new instance upon every
 deploy.
 
 ## Configure your klue-microservice
 
 Your klue-microservice project should contain in its root a file called
-'klue-config.yaml' looking like:
+'klue-config.yaml' containing at least the following key-value pairs for the
+deploy pipeline to work:
 
 ```yaml
 name: <YOUR_NEW_SERVICE_NAME>
@@ -195,25 +217,8 @@ iam_user: <IAM_USER_NAME>
 ssh_keypair: <NAME_OF_SSH_KEYPAIR_TO_USE_IN_EC2>
 ```
 
-## Deploy your micro-service
-
-The default deploy pipeline for Klue micro services consists of the following
-steps:
-* Compile a docker image running the Klue flask server
-* Run that image in a local docker engine and execute all acceptance tests against it
-* If tests pass, push the docker image to a docker registry
-* Create a new Elastic Beanstalk (EBS) environment in which to run your image and start it
-* Run acceptance tests again, this time against the new EBS environment
-* Swap this environment with the live environment of that amazon application: your service is now live!
-* Run acceptance tests one last time, against the live environment
-
-```shell
-deploy_pipeline --push --deploy
-```
-
-Voila! After a few minutes your micro-service will be live, running as a docker
-container in amazon Elastic Beanstalk, with all the goodies of auto-scalling
-and self-repair it offers :-)
+See [klue-microservice](https://github.com/erwan-lemonnier/klue-microservice)
+for details on 'klue-config.yaml'.
 
 ## Manual removal of out-dated Beanstalk environment
 
@@ -222,6 +227,5 @@ after swapping it away in favor of a new one. The old environment is kept so
 that you may swap it back into live position should your new environment be
 failing despite all acceptance tests.
 
-Each environment consumes resources in terms of instance time and load
-balancer: you should therefore regularly manually delete old environments from
-your Beanstalk application.
+Each environment consumes resources that you'll have to pay for, so you should
+regularly delete manually the old environments from your Beanstalk application.
