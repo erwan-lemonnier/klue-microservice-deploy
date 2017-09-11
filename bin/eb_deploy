@@ -12,6 +12,9 @@ AWS_KEYNAME=$(klue_config --aws-keypair)
 ARN_CERT=$(klue_config --aws-cert-arn)
 DOCKER_BUCKET=$(klue_config --docker-bucket)
 
+AUTO_MINSIZE=$(klue_config --aws-hosts-min)
+AUTO_MAXSIZE=$(klue_config --aws-hosts-max)
+
 DEPLOY_ONLY=0
 VERSION=
 PROG=$(basename $0)
@@ -95,7 +98,7 @@ copy_ebextension() {
     NAME=$1
     echo "=> Generating .ebextensions/$NAME"
     mkdir -p .ebextensions
-    cp -v $PATH_EBEXTENSIONS/$NAME .ebextensions/$NAME
+    cp $PATH_EBEXTENSIONS/$NAME .ebextensions/$NAME
 }
 
 copy_ebextension autoscaling.config
@@ -103,6 +106,14 @@ copy_ebextension aws-secrets.config
 copy_ebextension healthcheckurl.config
 copy_ebextension notifications.config
 copy_ebextension rolling-updates.config
+
+# Adjust autoscaling group's size
+echo "=> Adjusting autoscaling group's sizes ($AUTO_MINSIZE:$AUTO_MAXSIZE)"
+cat .ebextensions/autoscaling.config \
+    | sed -e "s|KLUE_MINSIZE|$AUTO_MINSIZE|g" \
+    | sed -e "s|KLUE_MAXSIZE|$AUTO_MAXSIZE|g" \
+    > .ebextensions/autoscaling.config.new
+mv .ebextensions/autoscaling.config.new .ebextensions/autoscaling.config
 
 echo "=> Generating .ebextensions/aws-secrets.config"
 mkdir -p .ebextensions
