@@ -68,7 +68,9 @@ do
 done
 
 echo "=> Docker image will contain files:"
+echo ""
 tar -tvf docker/klue.tar
+echo ""
 
 echo "=> Generating docker/Dockerfile"
 cat $DOCKERFILE_TEMPLATE \
