@@ -1,0 +1,12 @@
+#!/usr/bin/env python
+
+import os
+import sys
+import click
+
+PATH_LIBS=os.path.join(os.path.dirname(os.path.realpath(__file__)), '..')
+sys.path.append(PATH_LIBS)
+
+from klue_deploy_configs import locate
+
+print(locate())

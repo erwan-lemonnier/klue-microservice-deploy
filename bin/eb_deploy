@@ -67,7 +67,7 @@ if [ "$PWD" != "$ROOTDIR" ]; then
     exit 1
 fi
 
-DOCKERRUN_TEMPLATE=$(get_docker_template_path --run)
+DOCKERRUN_TEMPLATE=$(get_deploy_config_path)/Dockerrun.aws.json.template
 if [ ! -e "$DOCKERRUN_TEMPLATE" ]; then
     echo "ERROR: cannot find $DOCKERRUN_TEMPLATE"
     exit 1
@@ -83,19 +83,26 @@ mkdir -p $TMPDIR
 echo "=> Copying clone to $TMPDIR"
 cp -LR * \
     .elasticbeanstalk \
-    .ebextensions \
     .git \
     .gitignore \
     $TMPDIR
 
 cd $TMPDIR
 
-# if [ -z "$AUTH0_CLIENT_SECRET_KLUE" ]; then
-#     echo "ERROR: AUTH0_CLIENT_SECRET_KLUE is not set"
-#     exit 1
-# fi
+PATH_EBEXTENSIONS=$(get_deploy_config_path)
 
-# tell_slack "WARNING: a new version of service $PROJECT_NAME is being released"
+copy_ebextension() {
+    NAME=$1
+    echo "=> Generating .ebextensions/$NAME"
+    mkdir -p .ebextensions
+    cp -v $PATH_EBEXTENSIONS/$NAME .ebextensions/$NAME
+}
+
+copy_ebextension autoscaling.config
+copy_ebextension aws-secrets.config
+copy_ebextension healthcheckurl.config
+copy_ebextension notifications.config
+copy_ebextension rolling-updates.config
 
 echo "=> Generating .ebextensions/aws-secrets.config"
 mkdir -p .ebextensions
