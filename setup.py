@@ -31,9 +31,9 @@ if version:
 print("version: %s" % version)
 
 setup(
-    name='klue-aws-toolbox',
+    name='klue-microservice-deploy',
     version=version,
-    url='https://github.com/erwan-lemonnier/klue-aws-toolbox',
+    url='https://github.com/erwan-lemonnier/klue-microservice-deploy',
     license='BSD',
     author='Erwan Lemonnier',
     author_email='erwan@lemonnier.se',
