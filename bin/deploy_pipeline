@@ -13,7 +13,6 @@ fi
 
 NAME=$(klue_config --name)
 DOCKER_ROOT_REPO=$(klue_config --docker-repo)
-AWS_REGION=$(klue_config --aws-region)
 AWS_PROFILE=$(klue_config --aws-user)
 DOCKER_REPO=$DOCKER_ROOT_REPO/$NAME
 DOCKER_BUCKET=$(klue_config --docker-bucket)
