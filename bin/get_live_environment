@@ -12,15 +12,25 @@ elif [ ! -z $1 ]; then
     exit 0
 fi
 
-NAME=$(eb list | sed -e 's/[\* ]//gm' | sort -n -r | head -n 1);
-CNAME=$(eb status $NAME | grep CNAME | awk '{print $2}')
-if [ ! -z $CNAME ]; then
-    if [ -z "$SHOW_CNAME" ]; then
-        echo $NAME
-    else
-        echo $CNAME
+# The technique used here is really crappy: basically, we list the CNAME
+# of every elasticbean environment in the current application, and assume
+# that the live one has a cname of the form <prettyname>.<awsregion>.elasticbeanstalk.com
+# while all others are named <app-id>.<randomstring>.<awsregion>.elasticbeanstalk.com,
+# so we count the dots!! The winner has only 3 dots...
+
+for NAME in $(eb list);
+do
+    CNAME=$(eb status $NAME | grep CNAME | awk '{ print $2 }')
+    COUNT_DOTS=$(echo $CNAME | tr -dc '\.' | awk '{ print length; }')
+    if [ $COUNT_DOTS -eq 3 ]; then
+        if [ -z "$SHOW_CNAME" ]; then
+            echo $NAME
+        else
+            echo $CNAME
+        fi
+        exit 0
     fi
-elif [ -z "$NAME" ]; then
-    # 'eb list' is broken...
-    echo "ERROR: Failed to find current live environment"
-fi
+done
+
+echo "ERROR: Failed to find current live environment"
+exit 1
