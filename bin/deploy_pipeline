@@ -88,11 +88,6 @@ do_unit_tests() {
     fi
 }
 
-do_acceptance_tests() {
-    IMAGE_ID=$(docker images --quiet ${DOCKER_REPO}:${VERSION})
-    run_acceptance_tests $IMAGE_ID
-}
-
 do_push_to_registry() {
     # NOTE: for this to work, the running user must have logged in into the
     # docker hub using 'docker login'
@@ -136,7 +131,9 @@ if [ -z "$DONT_BUILD" ]; then
     do_gen_version $WITH_DEBUG
     do_unit_tests $WITH_DEBUG
     build_docker_image $DOCKER_REPO $VERSION $WITH_DEBUG
-    do_acceptance_tests $WITH_DEBUG
+
+    IMAGE_ID=$(docker images --quiet ${DOCKER_REPO}:${VERSION})
+    run_acceptance_tests --image $IMAGE_ID
 else
     do_get_last_version $WITH_DEBUG
 fi
