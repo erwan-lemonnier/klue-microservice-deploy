@@ -237,7 +237,7 @@ if [ ! -z "$ARN_CERT" ]; then
     TEST_PORT=443
 
     echo ""
-    echo "=> Reconfiguring environment to use HTTPS only"
+    echo "=> Reconfiguring environment to use both HTTP and HTTPS"
 
     # These services listen on 443 only
     cat <<EOF > elb-https.json
@@ -265,7 +265,22 @@ if [ ! -z "$ARN_CERT" ]; then
     {
         "Namespace": "aws:elb:listener:80",
         "OptionName": "ListenerEnabled",
-        "Value": "false"
+        "Value": "true"
+    },
+    {
+        "Namespace": "aws:elb:listener:80",
+        "OptionName": "ListenerProtocol",
+        "Value": "HTTP"
+    },
+    {
+        "Namespace": "aws:elb:listener:80",
+        "OptionName": "InstanceProtocol",
+        "Value": "HTTP"
+    },
+    {
+        "Namespace": "aws:elb:listener:443",
+        "OptionName": "InstancePort",
+        "Value": "80"
     }
 ]
 EOF
