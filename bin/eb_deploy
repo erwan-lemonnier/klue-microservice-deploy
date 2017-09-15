@@ -313,6 +313,7 @@ fi
 URL=$(aws elasticbeanstalk describe-environments --profile $EB_PROFILE --environment-names $NEW_ENV_NAME | grep EndpointURL | awk '{print $2}' | sed -e 's/[\"\,]//g')
 echo ""
 echo "=> New environment is live at $URL"
+cd $ROOTDIR
 run_acceptance_tests --host $URL --port $TEST_PORT --no-ssl-check
 RC=$?
 if [ "$RC" -ne 0 ]; then
