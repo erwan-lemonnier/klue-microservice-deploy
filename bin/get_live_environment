@@ -21,6 +21,10 @@ fi
 for NAME in $(eb list);
 do
     CNAME=$(eb status $NAME | grep CNAME | awk '{ print $2 }')
+    if [ -z $CNAME ]; then
+        echo "ERROR: 'eb status' seems broken!!"
+        exit 1
+    fi
     COUNT_DOTS=$(echo $CNAME | tr -dc '\.' | awk '{ print length; }')
     if [ $COUNT_DOTS -eq 3 ]; then
         if [ -z "$SHOW_CNAME" ]; then
