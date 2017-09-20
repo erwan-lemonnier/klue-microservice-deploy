@@ -18,10 +18,10 @@ fi
 # while all others are named <app-id>.<randomstring>.<awsregion>.elasticbeanstalk.com,
 # so we count the dots!! The winner has only 3 dots...
 
-for NAME in $(eb list);
+for NAME in $(eb list | sed -e 's/*//');
 do
     CNAME=$(eb status $NAME | grep CNAME | awk '{ print $2 }')
-    if [ -z $CNAME ]; then
+    if [ -z "$CNAME" ]; then
         echo "ERROR: 'eb status' seems broken!!"
         exit 1
     fi
