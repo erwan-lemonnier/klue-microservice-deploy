@@ -1,9 +1,9 @@
 #!/bin/bash
 
 set -e
+set -x
 
-DOCKER_ROOT_REPO=$(klue_config --docker-repo)
-DOCKER_REPO=$DOCKER_ROOT_REPO/klue-base
+DOCKER_REPO=kluemicroservice/base
 VERSION=$(print_version)
 
 IS_DIRTY_CLONE=$(git status --short --porcelain | wc -l)
@@ -24,8 +24,15 @@ if [ ! -e "$DOCKERFILE_TEMPLATE" ]; then
     exit 1
 fi
 
-echo "=> Generating docker/Dockerfile"
+echo "=> Default Klue-microservice requirements"
 mkdir -p docker
+cat <<EOF > docker/requirements.txt
+Klue-microservice
+Klue-microservice-async
+EOF
+
+echo "=> Generating docker/Dockerfile"
+
 cp requirements.txt docker/
 cat $DOCKERFILE_TEMPLATE \
     | sed -e "s/<VERSION>/$VERSION/" \
@@ -55,6 +62,5 @@ fi
 
 echo "=> Pushing to registry ${DOCKER_REPO}:${VERSION}"
 docker push ${DOCKER_REPO}:${VERSION}
-
 
 echo "=> Done."
