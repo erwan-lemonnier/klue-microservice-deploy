@@ -1,7 +1,6 @@
 #!/bin/bash
 
 set -e
-set -x
 
 DOCKER_REPO=kluemicroservice/base
 VERSION=$(print_version)
