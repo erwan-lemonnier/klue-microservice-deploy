@@ -5,7 +5,7 @@ MAINTAINER Erwan Lemonnier <erwan@lemonnier.se>
 ADD klue.tar /klue
 RUN echo "<VERSION>" > /klue/VERSION
 RUN /bin/bash -c "source /klue/virtenv/bin/activate; pip install -r /klue/requirements.txt --upgrade"
-RUN /bin/bash -c "source /klue/virtenv/bin/activate; pip install klue-client-server --upgrade"
+RUN /bin/bash -c "source /klue/virtenv/bin/activate; pip install klue-client-server klue-microservice klue-microservice-async klue-unit --upgrade"
 RUN /bin/bash -c "source /klue/virtenv/bin/activate; python -V"
 RUN /bin/bash -c "source /klue/virtenv/bin/activate; pip freeze"
 
@@ -15,4 +15,4 @@ WORKDIR /klue
 
 ENV LC_ALL=C.UTF-8
 ENV LANG=C.UTF-8
-CMD /bin/bash -c "source /klue/virtenv/bin/activate; gunicorn --bind 0.0.0.0:80 --config python:klue_microservice.gunicorn server:app"
+CMD /bin/bash -c "source /klue/virtenv/bin/activate; <START_CELERY> gunicorn --bind 0.0.0.0:80 --config python:klue_microservice.gunicorn server:app"

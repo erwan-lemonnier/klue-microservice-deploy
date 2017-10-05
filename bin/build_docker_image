@@ -4,7 +4,12 @@ set -e
 
 DOCKER_REPO=$1
 VERSION=$2
+DEBUG=$3
 PROG=$(basename $0)
+
+if [ ! -z "$DEBUG" ]; then
+    set -x
+fi
 
 if [ -z "$VERSION" -o -z "$DOCKER_REPO" ]; then
     echo "USAGE: $PROG <docker-repo> <version>"
@@ -34,7 +39,6 @@ do
     check_git_clean $LINK
 done
 
-
 ROOTDIR=$(git rev-parse --show-toplevel)
 if [ "$PWD" != "$ROOTDIR" ]; then
     echo "ERROR: current dir is not the clone's root directory"
@@ -49,6 +53,13 @@ fi
 
 PROJECT_NAME=$(klue_config --name)
 DOCKER_ROOT_REPO=$(klue_config --docker-repo)
+
+CELERY_CMD=''
+DO_ASYNC=$(klue_config --with-async)
+if [ ! -z "$DO_ASYNC" ]; then
+    CELERY_CMD=$(python -c 'import klue_async; print(klue_async.get_celery_cmd(False))')
+    CELERY_CMD="/etc/init.d/rabbitmq-server start \&\& $CELERY_CMD \&\& "
+fi
 
 echo "=> Taring source with git archive"
 mkdir -p docker
@@ -74,8 +85,8 @@ echo ""
 
 echo "=> Generating docker/Dockerfile"
 cat $DOCKERFILE_TEMPLATE \
-    | sed -e "s/<VERSION>/$VERSION/" \
-    | sed -e "s/whatever/$DOCKER_ROOT_REPO/" \
+    | sed -e "s|<VERSION>|$VERSION|" \
+    | sed -e "s|<START_CELERY>|$CELERY_CMD|" \
     > docker/Dockerfile
 
 # Remove image if it already exists
