@@ -58,7 +58,7 @@ CELERY_CMD=''
 DO_ASYNC=$(klue_config --with-async)
 if [ ! -z "$DO_ASYNC" ]; then
     CELERY_CMD=$(python -c 'import klue_async; print(klue_async.get_celery_cmd(False))')
-    CELERY_CMD="/etc/init.d/rabbitmq-server start \&\& $CELERY_CMD \&\& "
+    CELERY_CMD="/etc/init.d/rabbitmq-server start \& $CELERY_CMD \& "
 fi
 
 echo "=> Taring source with git archive"
