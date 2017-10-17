@@ -1,4 +1,4 @@
-FROM kluemicroservice/base:171002-2107-132
+FROM kluemicroservice/base:171017-0646-50
 MAINTAINER Erwan Lemonnier <erwan@lemonnier.se>
 
 # install application
