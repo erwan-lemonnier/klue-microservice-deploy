@@ -1,3 +1,4 @@
+docker/
 klue_microservice_deploy.egg-info/
 dist/
 **/__pycache__
