@@ -2,10 +2,12 @@
 import click
 import sys
 import re
+import os
 import subprocess
 import logging
 import json
 from pprint import pprint
+from klue_microservice.config import get_config
 
 
 # Logging setup
@@ -21,13 +23,22 @@ root.addHandler(ch)
 
 @click.command()
 @click.option('--live/--no-live', help="Will really kill applications/instances", default=False)
-@click.option('--aws-profile', help="AWS profile to use when executing aws cli.", default="klue-publish")
+@click.option('--aws-profile', help="AWS profile to use when executing aws cli.", default=None)
 @click.option('--kill-oldest-instance/--no-kill-oldest-instance', help="Kill or not the oldest EC2 instance in each live environment.", default=False)
 def main(live, aws_profile, kill_oldest_instance):
     """Remove swaped-out elasticbean applications and optionaly kill the oldest
     instance in each live environment, as a cheap insurance against ressource
     leaks.
     """
+
+    if not aws_profile:
+        conf = get_config(os.path.join(os.getcwd(), 'klue-config.yaml'))
+        aws_profile = conf.aws_user
+        if not aws_profile:
+            print("ERROR: Please provide --aws-profile or run this script in a directory containing a klue-config.yaml")
+            sys.exit(1)
+
+    log.info("Using aws cli user %s" % aws_profile)
 
     out = subprocess.check_output("aws elasticbeanstalk describe-environments --profile %s" % aws_profile, shell=True)
     environments = json.loads(out.decode("utf-8"))
@@ -100,6 +111,8 @@ def main(live, aws_profile, kill_oldest_instance):
                 pprint(json.loads(out.decode("utf-8")))
             else:
                 log.debug("TEST MODE! Would kill instance %s launched at %s" % (id_oldest, launchtime_oldest))
+        else:
+            log.info("--kill-oldest-instance not set - Not terminating oldest instances.")
 
 
 if __name__ == "__main__":
