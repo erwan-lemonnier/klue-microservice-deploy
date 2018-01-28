@@ -36,13 +36,10 @@ def main(live, aws_profile, kill_oldest_instance):
         os.environ["AWS_DEFAULT_REGION"] = conf.aws_default_region
         os.environ["AWS_ACCESS_KEY_ID"] = conf.aws_access_key_id
         os.environ["AWS_SECRET_ACCESS_KEY"] = conf.aws_secret_access_key
+        aws_profile = conf.aws_user
 
-    with_profile = ''
-    if aws_profile:
-        with_profile = '--profile %s' % aws_profile
-        log.info("Using aws cli user %s" % aws_profile)
-    else:
-        log.info("Using aws region %s and key %s" % (conf.aws_default_region, conf.aws_access_key_id))
+    with_profile = '--profile %s' % aws_profile
+    log.info("Using aws cli user %s" % aws_profile)
 
     out = subprocess.check_output("aws elasticbeanstalk describe-environments %s" % with_profile, shell=True)
     environments = json.loads(out.decode("utf-8"))
