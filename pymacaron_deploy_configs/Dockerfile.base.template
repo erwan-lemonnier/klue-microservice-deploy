@@ -13,9 +13,9 @@ RUN easy_install3 pip
 RUN pip install -U pip virtualenv
 
 # install virtualenv and pip base packages
-RUN mkdir /macaron
-ADD requirements.txt /macaron
-RUN echo "<VERSION>" > /macaron/BASEVERSION
-RUN virtualenv -p python3 /macaron/virtenv
-RUN /bin/bash -c "source /macaron/virtenv/bin/activate; pip install -r /macaron/requirements.txt --upgrade"
-RUN rm /macaron/requirements.txt
+RUN mkdir /pym
+ADD requirements.txt /pym
+RUN echo "<VERSION>" > /pym/BASEVERSION
+RUN virtualenv -p python3 /pym/virtenv
+RUN /bin/bash -c "source /pym/virtenv/bin/activate; pip install -r /pym/requirements.txt --upgrade"
+RUN rm /pym/requirements.txt
