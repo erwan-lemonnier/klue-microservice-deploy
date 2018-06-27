@@ -17,7 +17,7 @@ if [ "$PWD" != "$ROOTDIR" ]; then
     exit 1
 fi
 
-DOCKERFILE_TEMPLATE=$(get_deploy_config_path)/Dockerfile.base.template
+DOCKERFILE_TEMPLATE=$(bin/get_deploy_config_path)/Dockerfile.base.template
 if [ ! -e "$DOCKERFILE_TEMPLATE" ]; then
     echo "ERROR: cannot find $DOCKERFILE_TEMPLATE"
     exit 1
