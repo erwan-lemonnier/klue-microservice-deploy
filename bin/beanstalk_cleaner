@@ -7,7 +7,7 @@ import subprocess
 import logging
 import json
 from pprint import pprint
-from klue_microservice.config import get_config
+from pymacaron.config import get_config
 
 
 # Logging setup

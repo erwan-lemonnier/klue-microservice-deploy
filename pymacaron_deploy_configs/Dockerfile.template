@@ -1,0 +1,18 @@
+FROM pymacaron/base:171204-1548-53
+MAINTAINER Erwan Lemonnier <erwan@lemonnier.se>
+
+# install application
+ADD macaron.tar /macaron
+RUN echo "<VERSION>" > /macaron/VERSION
+RUN /bin/bash -c "source /macaron/virtenv/bin/activate; pip install -r /macaron/requirements.txt --upgrade"
+RUN /bin/bash -c "source /macaron/virtenv/bin/activate; pip install pymacaron-core pymacaron pymacaron-async pymacaron-unit --upgrade"
+RUN /bin/bash -c "source /macaron/virtenv/bin/activate; python -V"
+RUN /bin/bash -c "source /macaron/virtenv/bin/activate; pip freeze"
+
+EXPOSE 80
+VOLUME ["/var/log"]
+WORKDIR /macaron
+
+ENV LC_ALL=C.UTF-8
+ENV LANG=C.UTF-8
+CMD /bin/bash -c "source /macaron/virtenv/bin/activate; <START_CELERY> gunicorn --bind 0.0.0.0:80 --config python:pymacaron.gunicorn server:app"

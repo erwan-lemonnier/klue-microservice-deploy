@@ -57,22 +57,22 @@ DOCKER_ROOT_REPO=$(pym_config --docker-repo)
 CELERY_CMD=''
 DO_ASYNC=$(pym_config --with-async)
 if [ ! -z "$DO_ASYNC" ]; then
-    CELERY_CMD=$(python -c 'import klue_async; print(klue_async.get_celery_cmd(False))' | tail -n 1)
+    CELERY_CMD=$(python -c 'import pymacaron_async; print(pymacaron_async.get_celery_cmd(False))' | tail -n 1)
     CELERY_CMD="redis-server \& $CELERY_CMD \& "
 fi
 
 echo "=> Taring source with git archive"
 mkdir -p docker
-git archive -o docker/klue.tar HEAD
+git archive -o docker/macaron.tar HEAD
 
 if [ -d 'apis' ]; then
-    tar -rf docker/klue.tar apis/*.yaml
+    tar -rf docker/macaron.tar apis/*.yaml
 fi
 
 for LINK in $(pym_config --include-links)
 do
     tar --dereference \
-        -rf docker/klue.tar \
+        -rf docker/macaron.tar \
         --exclude='*.pyc' \
         --exclude='*__pycache__*' \
         $LINK
@@ -80,7 +80,7 @@ done
 
 echo "=> Docker image will contain files:"
 echo ""
-tar -tvf docker/klue.tar
+tar -tvf docker/macaron.tar
 echo ""
 
 echo "=> Generating docker/Dockerfile"

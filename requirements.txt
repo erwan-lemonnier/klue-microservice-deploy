@@ -1,6 +1,7 @@
 requests_oauthlib
 dynadbmutex
-klue-microservice
+pymacaron
+pymacaron-async
 dynadbobjectstore>=1.0.0
 facebook-sdk==2.0.0
 mock==2.0.0

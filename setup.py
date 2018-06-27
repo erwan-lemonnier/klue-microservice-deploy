@@ -31,13 +31,13 @@ if version:
 print("version: %s" % version)
 
 setup(
-    name='klue-microservice-deploy',
+    name='pymacaron-aws',
     version=version,
-    url='https://github.com/erwan-lemonnier/klue-microservice-deploy',
+    url='https://github.com/pymacaron/pymacaron-aws',
     license='BSD',
     author='Erwan Lemonnier',
     author_email='erwan@lemonnier.se',
-    description='Tools to run a Klue micro-service on Amazon aws/docker',
+    description='Deploy a PyMacaron microservice to Amazon aws/docker',
     install_requires=[
         'awsebcli==3.0.5',
         'awscli',
@@ -50,8 +50,8 @@ setup(
         'pep8'
     ],
     test_suite='nose.collector',
-    packages=['klue_deploy_configs'],
-    package_data={'klue_deploy_configs': ['*.template', '*.config']},
+    packages=['pymacaron_deploy_configs'],
+    package_data={'pymacaron_deploy_configs': ['*.template', '*.config']},
     scripts=glob("bin/*"),
     zip_safe=False,
     platforms='any',

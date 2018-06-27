@@ -1,6 +1,6 @@
 FROM phusion/baseimage:0.9.18
 LABEL "version": "<VERSION>" \
-      "description": "klue-microservice base image" \
+      "description": "pymacaron base image" \
       "maintainer": "Erwan Lemonnier <erwan@lemonnier.se>"
 
 # install dependencies
@@ -13,9 +13,9 @@ RUN easy_install3 pip
 RUN pip install -U pip virtualenv
 
 # install virtualenv and pip base packages
-RUN mkdir /klue
-ADD requirements.txt /klue
-RUN echo "<VERSION>" > /klue/BASEVERSION
-RUN virtualenv -p python3 /klue/virtenv
-RUN /bin/bash -c "source /klue/virtenv/bin/activate; pip install -r /klue/requirements.txt --upgrade"
-RUN rm /klue/requirements.txt
+RUN mkdir /macaron
+ADD requirements.txt /macaron
+RUN echo "<VERSION>" > /macaron/BASEVERSION
+RUN virtualenv -p python3 /macaron/virtenv
+RUN /bin/bash -c "source /macaron/virtenv/bin/activate; pip install -r /macaron/requirements.txt --upgrade"
+RUN rm /macaron/requirements.txt

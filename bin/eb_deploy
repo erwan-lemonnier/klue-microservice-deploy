@@ -110,8 +110,8 @@ copy_ebextension rolling-updates.config
 # Adjust autoscaling group's size
 echo "=> Adjusting autoscaling group's sizes ($AUTO_MINSIZE:$AUTO_MAXSIZE)"
 cat .ebextensions/autoscaling.config \
-    | sed -e "s|KLUE_MINSIZE|$AUTO_MINSIZE|g" \
-    | sed -e "s|KLUE_MAXSIZE|$AUTO_MAXSIZE|g" \
+    | sed -e "s|PYM_MINSIZE|$AUTO_MINSIZE|g" \
+    | sed -e "s|PYM_MAXSIZE|$AUTO_MAXSIZE|g" \
     > .ebextensions/autoscaling.config.new
 mv .ebextensions/autoscaling.config.new .ebextensions/autoscaling.config
 
@@ -338,4 +338,3 @@ echo "=> Using $NEW_ENV_NAME as default environment"
 eb use $NEW_ENV_NAME
 
 cleanup
-
