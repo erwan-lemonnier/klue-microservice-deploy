@@ -43,7 +43,7 @@ setup(
         'awscli',
     ],
     tests_require=[
-        'awsebcli==3.0.5',
+        'awsebcli==3.12.1',
         'awscli',
         'nose',
         'mock',
