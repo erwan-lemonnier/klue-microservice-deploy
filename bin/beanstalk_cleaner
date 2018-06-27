@@ -32,7 +32,7 @@ def main(live, aws_profile, kill_oldest_instance):
     """
 
     if not aws_profile:
-        conf = get_config(os.path.join(os.getcwd(), 'klue-config.yaml'))
+        conf = get_config(os.path.join(os.getcwd(), 'pym-config.yaml'))
         os.environ["AWS_DEFAULT_REGION"] = conf.aws_default_region
         os.environ["AWS_ACCESS_KEY_ID"] = conf.aws_access_key_id
         os.environ["AWS_SECRET_ACCESS_KEY"] = conf.aws_secret_access_key

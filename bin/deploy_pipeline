@@ -6,16 +6,16 @@ ARGS=$@
 
 WITH_DOWNTIME=
 
-if [ ! -e 'klue-config.yaml' ]; then
-    echo "ERROR: no klue-config.yaml in current dir"
+if [ ! -e 'pym-config.yaml' ]; then
+    echo "ERROR: no pym-config.yaml in current dir"
     exit 1
 fi
 
-NAME=$(klue_config --name)
-DOCKER_ROOT_REPO=$(klue_config --docker-repo)
-AWS_PROFILE=$(klue_config --aws-user)
+NAME=$(pym_config --name)
+DOCKER_ROOT_REPO=$(pym_config --docker-repo)
+AWS_PROFILE=$(pym_config --aws-user)
 DOCKER_REPO=$DOCKER_ROOT_REPO/$NAME
-DOCKER_BUCKET=$(klue_config --docker-bucket)
+DOCKER_BUCKET=$(pym_config --docker-bucket)
 
 # . env_setup
 

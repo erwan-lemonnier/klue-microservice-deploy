@@ -206,7 +206,7 @@ deploy.
 ## Configure your klue-microservice
 
 Your klue-microservice project should contain in its root a file called
-'klue-config.yaml' containing at least the following key-value pairs for the
+'pym-config.yaml' containing at least the following key-value pairs for the
 deploy pipeline to work:
 
 ```yaml
@@ -218,7 +218,7 @@ ssh_keypair: <NAME_OF_SSH_KEYPAIR_TO_USE_IN_EC2>
 ```
 
 See [klue-microservice](https://github.com/erwan-lemonnier/klue-microservice)
-for details on 'klue-config.yaml'.
+for details on 'pym-config.yaml'.
 
 ## Manual removal of out-dated Beanstalk environment
 

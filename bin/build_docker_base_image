@@ -2,7 +2,7 @@
 
 set -e
 
-DOCKER_REPO=kluemicroservice/base
+DOCKER_REPO=pymacaron/base
 VERSION=$(print_version)
 
 IS_DIRTY_CLONE=$(git status --short --porcelain | wc -l)
@@ -23,11 +23,11 @@ if [ ! -e "$DOCKERFILE_TEMPLATE" ]; then
     exit 1
 fi
 
-echo "=> Default Klue-microservice requirements"
+echo "=> Default pymacaron requirements"
 mkdir -p docker
 cat <<EOF > docker/requirements.txt
-Klue-microservice
-Klue-microservice-async
+pymacaron
+pymacaron-async
 EOF
 
 echo "=> Generating docker/Dockerfile"

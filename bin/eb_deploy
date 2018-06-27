@@ -4,16 +4,16 @@ set -e
 
 ARGS=$@
 
-EB_PROFILE=$(klue_config --aws-user)
+EB_PROFILE=$(pym_config --aws-user)
 EB_TIMEOUT=15
-EB_INSTANCE_TYPE=$(klue_config --aws-instance-type)
+EB_INSTANCE_TYPE=$(pym_config --aws-instance-type)
 EB_PLATFORM=docker-1.12.6
-AWS_KEYNAME=$(klue_config --aws-keypair)
-ARN_CERT=$(klue_config --aws-cert-arn)
-DOCKER_BUCKET=$(klue_config --docker-bucket)
+AWS_KEYNAME=$(pym_config --aws-keypair)
+ARN_CERT=$(pym_config --aws-cert-arn)
+DOCKER_BUCKET=$(pym_config --docker-bucket)
 
-AUTO_MINSIZE=$(klue_config --aws-hosts-min)
-AUTO_MAXSIZE=$(klue_config --aws-hosts-max)
+AUTO_MINSIZE=$(pym_config --aws-hosts-min)
+AUTO_MAXSIZE=$(pym_config --aws-hosts-max)
 
 DEPLOY_ONLY=0
 VERSION=
@@ -76,8 +76,8 @@ if [ ! -e "$DOCKERRUN_TEMPLATE" ]; then
     exit 1
 fi
 
-PROJECT_NAME=$(klue_config --name)
-DOCKER_ROOT_REPO=$(klue_config --docker-repo)
+PROJECT_NAME=$(pym_config --name)
+DOCKER_ROOT_REPO=$(pym_config --docker-repo)
 
 DOCKER_REPO=$DOCKER_ROOT_REPO/$PROJECT_NAME
 
@@ -118,7 +118,7 @@ mv .ebextensions/autoscaling.config.new .ebextensions/autoscaling.config
 echo "=> Generating .ebextensions/aws-secrets.config"
 mkdir -p .ebextensions
 echo "option_settings:" > .ebextensions/aws-secrets.config
-for VAR in $(klue_config --env-secrets)
+for VAR in $(pym_config --env-secrets)
 do
     echo "   Adding $VAR"
     VALUE=$(env | grep "^$VAR=" | cut -d '=' -f 2)

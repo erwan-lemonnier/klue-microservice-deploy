@@ -34,7 +34,7 @@ check_git_clean() {
 
 check_git_clean '.'
 
-for LINK in $(klue_config --include-links)
+for LINK in $(pym_config --include-links)
 do
     check_git_clean $LINK
 done
@@ -51,11 +51,11 @@ if [ ! -e "$DOCKERFILE_TEMPLATE" ]; then
     exit 1
 fi
 
-PROJECT_NAME=$(klue_config --name)
-DOCKER_ROOT_REPO=$(klue_config --docker-repo)
+PROJECT_NAME=$(pym_config --name)
+DOCKER_ROOT_REPO=$(pym_config --docker-repo)
 
 CELERY_CMD=''
-DO_ASYNC=$(klue_config --with-async)
+DO_ASYNC=$(pym_config --with-async)
 if [ ! -z "$DO_ASYNC" ]; then
     CELERY_CMD=$(python -c 'import klue_async; print(klue_async.get_celery_cmd(False))' | tail -n 1)
     CELERY_CMD="redis-server \& $CELERY_CMD \& "
@@ -69,7 +69,7 @@ if [ -d 'apis' ]; then
     tar -rf docker/klue.tar apis/*.yaml
 fi
 
-for LINK in $(klue_config --include-links)
+for LINK in $(pym_config --include-links)
 do
     tar --dereference \
         -rf docker/klue.tar \
