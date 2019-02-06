@@ -34,6 +34,7 @@ OPTIONS:
 
   --debug:          be very verbose.
   --test:           only run local tests.
+  --no-tests:       skip all tests.
   --push:           do push image to docker hub.
   --deploy:         do deploy to aws EB.
   --no-build:       skip building and testing the container.
@@ -49,6 +50,9 @@ EXAMPLES:
 
 # only deploy
 ./build.sh --no-build --deploy
+
+# Build, push, deploy, without testing (DON'T)
+./build.sh --push --deploy --no-tests
 
 EOF
 }
@@ -105,6 +109,7 @@ do_push_to_registry() {
 
 DO_PUSH=
 DO_DEPLOY=
+DO_TEST=1
 DONT_BUILD=
 WITH_DEBUG=
 
@@ -115,6 +120,7 @@ parse_args() {
             "--no-build")      export DONT_BUILD=1;;
             "--push")          export DO_PUSH=1;;
             "--deploy")        export DO_DEPLOY=1;;
+            "--no-tests")      export DO_TEST=;;
             "--with-downtime") export WITH_DOWNTIME="--with-downtime";;
             "-h" | "--help")   usage; exit 0;;
             *)                 echo "Unknown argument '$1' (-h for help)"; exit 0;;
@@ -129,11 +135,15 @@ do_check_git_repo
 
 if [ -z "$DONT_BUILD" ]; then
     do_gen_version $WITH_DEBUG
-    do_unit_tests $WITH_DEBUG
+    if [ ! -z "$DO_TEST" ]; then
+        do_unit_tests $WITH_DEBUG
+    fi
     build_docker_image $DOCKER_REPO $VERSION $WITH_DEBUG
 
-    IMAGE_ID=$(docker images --quiet ${DOCKER_REPO}:${VERSION})
-    run_acceptance_tests --image $IMAGE_ID
+    if [ ! -z "$DO_TEST" ]; then
+        IMAGE_ID=$(docker images --quiet ${DOCKER_REPO}:${VERSION})
+        run_acceptance_tests --image $IMAGE_ID
+    fi
 else
     do_get_last_version $WITH_DEBUG
 fi
@@ -147,7 +157,9 @@ if [ ! -z "$DO_DEPLOY" ]; then
     echo "=> Waiting 1 min for cname swap to propagate"
     sleep 60
 
-    run_acceptance_tests --live $WITH_DEBUG
+    if [ ! -z "$DO_TEST" ]; then
+        run_acceptance_tests --live $WITH_DEBUG
+    fi
 fi
 
 echo "=> Done."
