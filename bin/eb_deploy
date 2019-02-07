@@ -4,20 +4,10 @@ set -e
 
 ARGS=$@
 
-EB_PROFILE=$(pym_config --aws-user)
-EB_TIMEOUT=15
-EB_INSTANCE_TYPE=$(pym_config --aws-instance-type)
-EB_PLATFORM=docker-1.12.6
-AWS_KEYNAME=$(pym_config --aws-keypair)
-ARN_CERT=$(pym_config --aws-cert-arn)
-DOCKER_BUCKET=$(pym_config --docker-bucket)
-
-AUTO_MINSIZE=$(pym_config --aws-hosts-min)
-AUTO_MAXSIZE=$(pym_config --aws-hosts-max)
-
 DEPLOY_ONLY=0
 VERSION=
 PROG=$(basename $0)
+DO_TEST=1
 
 
 cleanup() {
@@ -35,6 +25,8 @@ docker container, labelled with the given version number. Perform the steps:
 OPTIONS:
   --with-downtime:  Deploy to current environment instead of creating a new one
                     then swapping. This implies downtime.
+  --no-tests:       Don't run acceptance tests between deploying and swapping
+                    environments.
 
 EOF
 }
@@ -44,6 +36,7 @@ parse_args() {
         case $1 in
             "--debug")         set -x; DEBUG='true';;
             "--with-downtime") export DEPLOY_ONLY=1;;
+            "--no-tests")      export DO_TEST=;;
             "-h" | "--help")   usage; exit 0;;
             *)                 VERSION=$1;;
         esac
@@ -52,6 +45,20 @@ parse_args() {
 }
 
 parse_args $ARGS
+
+# Call pym_config directly to catch error
+pym_config --aws-user
+
+EB_PROFILE=$(pym_config --aws-user)
+EB_TIMEOUT=15
+EB_INSTANCE_TYPE=$(pym_config --aws-instance-type)
+EB_PLATFORM=docker-1.12.6
+AWS_KEYNAME=$(pym_config --aws-keypair)
+ARN_CERT=$(pym_config --aws-cert-arn)
+DOCKER_BUCKET=$(pym_config --docker-bucket)
+
+AUTO_MINSIZE=$(pym_config --aws-hosts-min)
+AUTO_MAXSIZE=$(pym_config --aws-hosts-max)
 
 if [ -z "$VERSION" ]; then
     usage
@@ -314,7 +321,9 @@ URL=$(aws elasticbeanstalk describe-environments --profile $EB_PROFILE --environ
 echo ""
 echo "=> New environment is live at $URL"
 cd $ROOTDIR
-run_acceptance_tests --host $URL --port $TEST_PORT --no-ssl-check
+if [ ! -z "$DO_TEST" ]; then
+    run_acceptance_tests --host $URL --port $TEST_PORT --no-ssl-check
+fi
 RC=$?
 if [ "$RC" -ne 0 ]; then
     tell_slack "Acceptance tests failed against $URL - deploy aborted"
