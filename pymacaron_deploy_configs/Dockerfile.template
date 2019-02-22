@@ -15,4 +15,4 @@ WORKDIR /pym
 
 ENV LC_ALL=C.UTF-8
 ENV LANG=C.UTF-8
-CMD /bin/bash -c "source /pym/virtenv/bin/activate; <START_CELERY> gunicorn --bind 0.0.0.0:80 --config python:pymacaron.gunicorn server:app"
+CMD /bin/bash -c "source /pym/virtenv/bin/activate; /pym/virtenv/bin/pym_monitor; <START_CELERY> gunicorn --bind 0.0.0.0:80 --config python:pymacaron.gunicorn server:app"
