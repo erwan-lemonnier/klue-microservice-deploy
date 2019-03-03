@@ -17,16 +17,18 @@ cleanup() {
 
 usage() {
     cat << EOF
-USAGE: $PROG [--with-downtime] <version>
+USAGE: $PROG [--with-downtime] [--no-tests] <version>
 
 Create a new elasticbeanstalk environment running the current source code in a
 docker container, labelled with the given version number. Perform the steps:
 
 OPTIONS:
-  --with-downtime:  Deploy to current environment instead of creating a new one
+  --with-downtime   Deploy to current environment instead of creating a new one
                     then swapping. This implies downtime.
-  --no-tests:       Don't run acceptance tests between deploying and swapping
+  --no-tests        Don't run acceptance tests between deploying and swapping
                     environments.
+  --debug           Debug verbosity.
+  --help            This text.
 
 EOF
 }
@@ -77,7 +79,7 @@ if [ "$PWD" != "$ROOTDIR" ]; then
     exit 1
 fi
 
-DOCKERRUN_TEMPLATE=$(get_deploy_config_path)/Dockerrun.aws.json.template
+DOCKERRUN_TEMPLATE=$(pymawspath)/Dockerrun.aws.json.template
 if [ ! -e "$DOCKERRUN_TEMPLATE" ]; then
     echo "ERROR: cannot find $DOCKERRUN_TEMPLATE"
     exit 1
@@ -99,7 +101,7 @@ cp -LR * \
 
 cd $TMPDIR
 
-PATH_EBEXTENSIONS=$(get_deploy_config_path)
+PATH_EBEXTENSIONS=$(pymawspath)
 
 copy_ebextension() {
     NAME=$1
