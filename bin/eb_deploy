@@ -198,7 +198,7 @@ if [ $DEPLOY_ONLY -eq 1 ]; then
 
     RC=$?
     if [ "$RC" -ne 0 ]; then
-        # tell_slack "Failed to deploy version $VERSION of $PROJECT_NAME to environment $NEW_ENV_NAME - deploy aborted"
+        echo "ERROR: Failed to deploy version $VERSION of $PROJECT_NAME to environment $NEW_ENV_NAME - deploy aborted"
         exit 1
     fi
 
@@ -220,7 +220,7 @@ eb create \
 
 RC=$?
 if [ "$RC" -ne 0 ]; then
-    # tell_slack "Failed to create environment $NEW_ENV_NAME - deploy aborted"
+    echo "Failed to create environment $NEW_ENV_NAME - deploy aborted"
     exit 1
 fi
 
@@ -235,7 +235,7 @@ eb deploy \
 
 RC=$?
 if [ "$RC" -ne 0 ]; then
-    # tell_slack "Failed to deploy version $VERSION of $PROJECT_NAME to environment $NEW_ENV_NAME - deploy aborted"
+    echo "Failed to deploy version $VERSION of $PROJECT_NAME to environment $NEW_ENV_NAME - deploy aborted"
     exit 1
 fi
 
@@ -301,7 +301,7 @@ EOF
 
     RC=$?
     if [ "$RC" -ne 0 ]; then
-        tell_slack "Failed to set HTTPS on $NEW_ENV_NAME - deploy aborted"
+        echo "ERROR: Failed to set HTTPS on $NEW_ENV_NAME - deploy aborted"
         exit 1
     fi
 
@@ -328,7 +328,7 @@ if [ ! -z "$DO_TEST" ]; then
 fi
 RC=$?
 if [ "$RC" -ne 0 ]; then
-    tell_slack "Acceptance tests failed against $URL - deploy aborted"
+    echo "ERROR: Acceptance tests failed against $URL - deploy aborted"
     exit 1
 fi
 
@@ -338,11 +338,11 @@ echo "=> Swapping CNAMES between $NEW_ENV_NAME and $CURRENT_ENV_NAME"
 eb swap $NEW_ENV_NAME -n $CURRENT_ENV_NAME
 RC=$?
 if [ "$RC" -ne 0 ]; then
-    tell_slack "Failed to swap cnames between $NEW_ENV_NAME and $CURRENT_ENV_NAME - deploy aborted"
+    echo "ERROR: Failed to swap cnames between $NEW_ENV_NAME and $CURRENT_ENV_NAME - deploy aborted"
     exit 1
 fi
 
-tell_slack "Release of $PROJECT_NAME successful."
+echo "=> Release of $PROJECT_NAME successful."
 
 # Use new environment as default
 echo "=> Using $NEW_ENV_NAME as default environment"
