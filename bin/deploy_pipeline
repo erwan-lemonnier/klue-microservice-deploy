@@ -11,11 +11,11 @@ if [ ! -e 'pym-config.yaml' ]; then
     exit 1
 fi
 
-NAME=$(pym_config --name)
-DOCKER_ROOT_REPO=$(pym_config --docker-repo)
-AWS_PROFILE=$(pym_config --aws-user)
+NAME=$(pymconfig --name)
+DOCKER_ROOT_REPO=$(pymconfig --docker-repo)
+AWS_PROFILE=$(pymconfig --aws-user)
 DOCKER_REPO=$DOCKER_ROOT_REPO/$NAME
-DOCKER_BUCKET=$(pym_config --docker-bucket)
+DOCKER_BUCKET=$(pymconfig --docker-bucket)
 
 # . env_setup
 
@@ -139,7 +139,7 @@ if [ -z "$DONT_BUILD" ]; then
     if [ ! -z "$DO_TEST" ]; then
         do_unit_tests $WITH_DEBUG
     fi
-    build_docker_image $DOCKER_REPO $VERSION $WITH_DEBUG
+    pymdocker --version $VERSION $WITH_DEBUG
 
     if [ ! -z "$DO_TEST" ]; then
         IMAGE_ID=$(docker images --quiet ${DOCKER_REPO}:${VERSION})
@@ -150,7 +150,7 @@ else
 fi
 
 if [ ! -z "$DO_PUSH" ]; then
-    do_push_to_registry $WITH_DEBUG
+    pymdocker --version $VERSION --no-build --push $WITH_DEBUG
 fi
 if [ ! -z "$DO_DEPLOY" ]; then
     eb_deploy $WITH_DOWNTIME $VERSION $WITH_DEBUG $EB_DEPLOY_ARGS
