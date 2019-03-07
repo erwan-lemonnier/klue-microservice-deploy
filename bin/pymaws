@@ -25,7 +25,7 @@ docker container, labelled with the given version number. Perform the steps:
 OPTIONS:
   --with-downtime   Deploy to current environment instead of creating a new one
                     then swapping. This implies downtime.
-  --no-tests        Don't run acceptance tests between deploying and swapping
+  --no-test         Don't run acceptance tests between deploying and swapping
                     environments.
   --debug           Debug verbosity.
   --help            This text.
@@ -38,7 +38,7 @@ parse_args() {
         case $1 in
             "--debug")         set -x; DEBUG='true';;
             "--with-downtime") export DEPLOY_ONLY=1;;
-            "--no-tests")      export DO_TEST=;;
+            "--no-test")       export DO_TEST=;;
             "-h" | "--help")   usage; exit 0;;
             *)                 VERSION=$1;;
         esac
