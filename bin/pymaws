@@ -324,7 +324,7 @@ echo ""
 echo "=> New environment is live at $URL"
 cd $ROOTDIR
 if [ ! -z "$DO_TEST" ]; then
-    run_acceptance_tests --host $URL --port $TEST_PORT --no-ssl-check
+    pymtest --host $URL --port $TEST_PORT --no-ssl-check
 fi
 RC=$?
 if [ "$RC" -ne 0 ]; then
