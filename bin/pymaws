@@ -54,7 +54,7 @@ pymconfig --aws-user
 EB_PROFILE=$(pymconfig --aws-user)
 EB_TIMEOUT=15
 EB_INSTANCE_TYPE=$(pymconfig --aws-instance-type)
-EB_PLATFORM=docker-1.12.6
+EB_PLATFORM=docker-18.06.1-ce
 AWS_KEYNAME=$(pymconfig --aws-keypair)
 ARN_CERT=$(pymconfig --aws-cert-arn)
 DOCKER_BUCKET=$(pymconfig --docker-bucket)
