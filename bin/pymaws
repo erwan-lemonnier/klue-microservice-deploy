@@ -115,6 +115,7 @@ copy_ebextension aws-secrets.config
 copy_ebextension healthcheckurl.config
 copy_ebextension notifications.config
 copy_ebextension rolling-updates.config
+copy_ebextension logs.config
 
 # Adjust autoscaling group's size
 echo "=> Adjusting autoscaling group's sizes ($AUTO_MINSIZE:$AUTO_MAXSIZE)"
