@@ -17,7 +17,7 @@ cleanup() {
 
 usage() {
     cat << EOF
-USAGE: $PROG [--with-downtime] [--no-tests] <version>
+USAGE: $PROG [--with-downtime] [--no-test] <version>
 
 Create a new elasticbeanstalk environment running the current source code in a
 docker container, labelled with the given version number. Perform the steps:
@@ -55,6 +55,7 @@ EB_PROFILE=$(pymconfig --aws-user)
 EB_TIMEOUT=15
 EB_INSTANCE_TYPE=$(pymconfig --aws-instance-type)
 EB_PLATFORM=docker-18.06.1-ce
+# EB_PLATFORM=docker-1.12.6  # if region is eu-west-1
 AWS_KEYNAME=$(pymconfig --aws-keypair)
 ARN_CERT=$(pymconfig --aws-cert-arn)
 DOCKER_BUCKET=$(pymconfig --docker-bucket)
