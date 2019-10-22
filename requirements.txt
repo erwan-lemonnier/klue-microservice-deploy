@@ -34,7 +34,7 @@ grequests==0.3.0
 sendgrid==3.6.3
 Unidecode==0.4.19
 cloudinary==1.5.0
-Pillow==3.4.2
+Pillow==6.2.0
 mechanize==0.2.5
 lxml==3.6.4
 elasticsearch==2.4.0
