@@ -14,7 +14,7 @@ pep8==1.7.0
 six==1.10.0
 bravado-core==4.0.1
 responses==0.5.1
-PyYAML==3.12
+PyYAML==5.1
 keen==0.3.26
 boto==2.43.0
 stripe==1.42.0
