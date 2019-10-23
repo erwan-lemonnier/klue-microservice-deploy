@@ -39,11 +39,11 @@ setup(
     author_email='erwan@lemonnier.se',
     description='Deploy a PyMacaron microservice to Amazon aws/docker',
     install_requires=[
-        'awsebcli==3.0.5',
+        'awsebcli>=3.12.1',
         'awscli',
     ],
     tests_require=[
-        'awsebcli==3.12.1',
+        'awsebcli>=3.12.1',
         'awscli',
         'nose',
         'mock',

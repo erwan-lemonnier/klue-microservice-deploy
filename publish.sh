@@ -29,4 +29,6 @@ echo "=> Running nosetests"
 nosetests
 
 echo "=> Build+Upload dist"
-python setup.py sdist upload -r pypi --version $VERSION
+python setup.py sdist --version $VERSION
+twine upload dist/*
+rm dist/*
