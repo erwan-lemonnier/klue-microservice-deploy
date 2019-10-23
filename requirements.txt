@@ -1,2 +1,5 @@
+awsebcli>=3.12.1
+awscli>=1.15.46
+nose
 twine>=1.8.0
 setuptools>=27.0.0
