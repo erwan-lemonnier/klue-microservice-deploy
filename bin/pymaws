@@ -141,6 +141,9 @@ do
     echo "    value: $VALUE" >> .ebextensions/aws-secrets.config
 done
 
+# And set default listening port to 80
+echo "  - option_name: PORT" >> .ebextensions/aws-secrets.config
+echo "    value: 80" >> .ebextensions/aws-secrets.config
 
 echo "=> Generating Dockerrun.aws.json for version $VERSION"
 cat $DOCKERRUN_TEMPLATE \
