@@ -145,6 +145,10 @@ done
 echo "  - option_name: PORT" >> .ebextensions/aws-secrets.config
 echo "    value: 80" >> .ebextensions/aws-secrets.config
 
+# And add the PYM_ENV variable identifying the deployed environment
+echo "  - option_name: PYM_ENV" >> .ebextensions/aws-secrets.config
+echo "    value: live" >> .ebextensions/aws-secrets.config
+
 echo "=> Generating Dockerrun.aws.json for version $VERSION"
 cat $DOCKERRUN_TEMPLATE \
     | sed -e "s|FROM whatever/|FROM $DOCKER_ROOT_REPO/|g" \
