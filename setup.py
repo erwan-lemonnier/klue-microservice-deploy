@@ -1,4 +1,5 @@
 from setuptools import setup
+from os import path
 import sys
 import os
 from glob import glob
@@ -30,6 +31,11 @@ if version:
     version = version.strip()
 print("version: %s" % version)
 
+# read the contents of the README file
+this_directory = path.abspath(path.dirname(__file__))
+with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
+    long_description = f.read()
+
 setup(
     name='pymacaron-aws',
     version=version,
@@ -37,7 +43,9 @@ setup(
     license='BSD',
     author='Erwan Lemonnier',
     author_email='erwan@lemonnier.se',
-    description='Deploy a PyMacaron microservice to Amazon aws/docker',
+    description='Pymacaron deployment pipeline towards Amazon Beanstalk',
+    long_description=long_description,
+    long_description_content_type='text/markdown',
     install_requires=[
         'awsebcli>=3.12.1',
         'awscli',
